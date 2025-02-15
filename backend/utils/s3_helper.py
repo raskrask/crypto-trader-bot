@@ -56,7 +56,6 @@ class S3Helper:
     def load_json_from_s3(self, file_key: str):
         """S3 から JSON データを読み込み"""
         try:
-            print(f">>>>> {self.bucket_name}")
             response = self.s3.get_object(Bucket=self.bucket_name, Key=file_key)
             return json.loads(response['Body'].read().decode("utf-8"))
         except self.s3.exceptions.NoSuchKey:

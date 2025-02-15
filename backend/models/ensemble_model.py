@@ -12,8 +12,8 @@ class EnsembleModel:
         self.models = {
 #            "random_forest": RandomForestModel(),
 #            "xgboost": XGBoostModel(),
-#            "lightgbm": LightGBMModel(),
-            "lstm": LSTMModel(sequence_length=sequence_length),
+            "lightgbm": LightGBMModel(),
+#            "lstm": LSTMModel(sequence_length=sequence_length),
         }
 
 

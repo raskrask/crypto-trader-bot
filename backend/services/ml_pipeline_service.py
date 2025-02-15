@@ -28,8 +28,10 @@ class MlPipelineService:
             self.training_status = {"progress": 20, "status": "Processing feature dataset...", "result": None}
             feature_data = self.feature_model.create_features(raw_data)
             print(feature_data)
-            X = feature_data[self.feature_model.feature_columns]
-            y = feature_data[self.feature_model.target_column]
+            #X = feature_data[self.feature_model.feature_columns]
+            #y = feature_data[self.feature_model.target_column]
+            future_days=1*24*4 # 15分足
+            X, y = self.feature_model.create_lagged_features(feature_data, future_days)
             X, y = self.scaler.fit_transform(X, y)
             print(X)
             print(y)

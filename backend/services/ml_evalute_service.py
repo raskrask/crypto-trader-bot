@@ -48,16 +48,16 @@ class MlEvaluteService:
             X = X[:min]
             print(X.shape)
 
-            aa = raw_data["timestamp"].tolist()[:min]
-            bb = raw_data["close_BTC_USDT"].tolist()[:min]
+            aa = raw_data["timestamp"].tolist()[-min:]
+            bb = raw_data["close_BTC_USDT"].tolist()[-min:]
 
-            print(f"{l} {len(y_pred)} {len(X)} {len(aa)} {len(bb)}")
-
+            print(f"{min} {l} {len(y_pred)} {len(X)} {len(aa)} {len(bb)} {len(raw_data)}")
+            #8832 8819 8819 8819 8819
             flat_list = np.array(y_pred).ravel().tolist()
 
             result = {
-                "dates": raw_data["timestamp"].tolist()[:min],
-                "actual": raw_data["close_BTC_USDT"].tolist()[:min],
+                "dates": raw_data["timestamp"].tolist()[-min:],
+                "actual": raw_data["close_BTC_USDT"].tolist()[-min:],
                 "current_model": flat_list,
                 "new_model": flat_list,
                 "evaluation": {

@@ -15,22 +15,34 @@ class FeatureDatasetModel:
 
     def create_features(self, df):
         """トレーニングデータら特徴量を作成"""
+        window = 2*24*4
 
         # 移動平均 (SMA) を作成
-        df["sma_5"] = df["close_BTC_USDT"].rolling(window=5).mean()
+        df["sma_5"] = df["close_BTC_USDT"].rolling(window).mean()
 
         # ボリンジャーバンド
-        df["bollinger_upper"] = df["sma_5"] + 2 * df["close_BTC_USDT"].rolling(window=5).std()
-        df["bollinger_lower"] = df["sma_5"] - 2 * df["close_BTC_USDT"].rolling(window=5).std()
+        df["bollinger_upper"] = df["sma_5"] + 2 * df["close_BTC_USDT"].rolling(window).std()
+        df["bollinger_lower"] = df["sma_5"] - 2 * df["close_BTC_USDT"].rolling(window).std()
 
         # RSI の計算（簡易的）
         df["rsi"] = 100 - (100 / (1 + (df["high_BTC_USDT"] / df["low_BTC_USDT"])))
 
         # ATR (Average True Range) の計算
         df["tr"] = df[["high_BTC_USDT", "low_BTC_USDT", "close_VITE_USDT"]].max(axis=1) - df[["high_BTC_USDT", "low_BTC_USDT", "close_BTC_USDT"]].min(axis=1)
-        df["atr"] = df["tr"].rolling(window=14).mean()
+        df["atr"] = df["tr"].rolling(window).mean()
 
         return df.dropna()
+
+
+    def create_lagged_features(self, df, future_days):
+        """
+        未来 `future_days` 日後の目的変数に移動した特徴量を返却する。
+        """
+        X = df[self.feature_columns].shift(-future_days).dropna()
+        y = df[self.target_column][:-future_days]
+
+        return X, y
+
 
     def create_features_(self, df):
         open = df['op']

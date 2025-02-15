@@ -13,7 +13,7 @@ class CryptoTrainingDataset:
     def __init__(self):
         self.config_data = get_config_manager().get_config()
         self.markets= ['VITE/USDT', 'BTC/USDT']
-        self.interval_min = 15  # 足の間隔を秒単位で指定。この場合は15分足
+        self.interval_min = 15  # 足の間隔。この場合は15分足
 
         self.created_at: datetime = datetime.utcnow()
         self.end_date: datetime = self.created_at.date() - timedelta(days=1)

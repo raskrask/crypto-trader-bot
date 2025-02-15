@@ -15,7 +15,7 @@ RUN cd /tmp \
     && ./configure --prefix=/usr/local \
     && (make -j4 || make) \
     && make install \
-    && rm -rf /tmp/* \
+    && rm -rf /tmp/ta-lib* \
     && echo "/usr/lib" >> /etc/ld.so.conf \
     && ldconfig
 
