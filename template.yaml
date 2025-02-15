@@ -1,0 +1,26 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  CryptoTradeBotBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: crypt-trade-bot
+
+  # FetchCryptoDataFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: FetchCryptoData
+  #     Handler: fetch_crypto.lambda_handler
+  #     Runtime: python3.9
+  #     CodeUri: .
+  #     Timeout: 60
+  #     Policies:
+  #       - S3WritePolicy:
+  #           BucketName: !Ref CryptoPriceHistoryBucket
+  #     Events:
+  #       Schedule:
+  #         Type: Schedule
+  #         Properties:
+  #           Schedule: "cron(0 0 * * ? *)"  # 毎日 UTC 0:00 に実行
+
