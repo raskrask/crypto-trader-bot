@@ -17,20 +17,12 @@ def fetch_predictions():
         return response.json()
     else:
         return None
+
 # 9_config
-def load_initial_config():
+def load_config():
     response = requests.get(f"{settings.API_BASE}/api/config")
     if response.status_code == 200:
-        data = response.json()
-        if "message" not in data:
-            return data
-    return {
-        "market_symbol": "BTC/JPY",
-        "training_period_months": 3,
-        "ensemble_ratio": 0.5,
-        "epochs": 50,
-        "test_ratio": 0.2
-    }
+        return response.json()
 
 def save_config(config):
     return requests.post(f"{settings.API_BASE}/api/config", json=config)

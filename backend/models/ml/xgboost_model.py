@@ -23,6 +23,9 @@ class XGBoostModel(MLModelBase):
     def _get_model_filename(self):
         return f"{self.model_type}_model.json"
 
+    def get_feature_importance(self, X_train):
+        return self._get_shap_feature_importance(X_train)
+
     def suggest_hyperparams(self, trial):
         """Optuna でのハイパーパラメータ設定"""
         return {

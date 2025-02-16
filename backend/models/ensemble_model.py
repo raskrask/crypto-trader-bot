@@ -11,8 +11,8 @@ class EnsembleModel:
         self.stage = stage
         self.models = {
 #            "random_forest": RandomForestModel(),
-#            "xgboost": XGBoostModel(),
-            "lightgbm": LightGBMModel(),
+            "xgboost": XGBoostModel(),
+#            "lightgbm": LightGBMModel(),
 #            "lstm": LSTMModel(sequence_length=sequence_length),
         }
 
@@ -62,3 +62,9 @@ class EnsembleModel:
 
         predictions = np.array(predictions)
         return np.mean(predictions, axis=0).tolist()
+
+    def get_feature_importance(self, X_test):
+        results = []
+        for name, model in self.models.items():
+            results.append(model.get_feature_importance(X_test))
+        return results

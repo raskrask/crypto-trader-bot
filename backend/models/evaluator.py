@@ -8,8 +8,8 @@ class Evaluator:
     def evaluate(self, y_true, y_pred):
         """モデルの評価指標を計算"""
 
-        if len(y_true) > len(y_pred):
-            y_true = y_true[:len(y_pred)]
+#        if len(y_true) > len(y_pred):
+#            y_true = y_true[:len(y_pred)]
 
         mse = mean_squared_error(y_true, y_pred)
         rmse = np.sqrt(mse)

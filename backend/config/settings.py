@@ -1,5 +1,6 @@
 import os
 import config.environment
+import pandas as pd
 
 class BaseConfig:
     """共通設定"""
@@ -16,6 +17,8 @@ class DevelopmentConfig(BaseConfig):
     """開発環境設定"""
     APP_ENV = "development"
     DEBUG = True
+    pd.set_option("display.max_columns", None)
+
 
 class ProductionConfig(BaseConfig):
     """本番環境設定"""

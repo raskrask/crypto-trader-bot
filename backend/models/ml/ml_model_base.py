@@ -1,4 +1,6 @@
 import os
+import shap
+import pandas as pd
 from abc import ABC, abstractmethod
 from config.settings import settings
 from utils.s3_helper import get_s3_helper
@@ -28,6 +30,18 @@ class MLModelBase(ABC):
     @abstractmethod
     def _get_model_filename(self):
         pass
+
+    @abstractmethod
+    def get_feature_importance(self, X_train):
+        pass
+
+    def _get_shap_feature_importance(self, X_train):
+        explainer = shap.Explainer(self.model, X_train)
+        shap_values = explainer(X_train)
+
+        # SHAP値の平均を計算し、影響度順にソート
+        shap_df = pd.DataFrame(shap_values.values, columns=X_train.columns)
+        return shap_df.abs().mean().sort_values(ascending=False)
 
     def is_sequence_model(self):
         return self.sequence_model 

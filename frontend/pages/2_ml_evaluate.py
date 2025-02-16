@@ -16,27 +16,37 @@ def get_prediction_data():
 prediction_data = get_prediction_data()
 
 #st.warning("1---------------")
-st.warning(prediction_data["dates"][:5])
-st.warning(prediction_data["actual"][:5])
-st.warning(prediction_data["new_model"][:5])
-st.warning(prediction_data["current_model"][:5])
+st.warning(prediction_data["dates"][5:][:30])
+st.warning(prediction_data["actual"][5:][:30])
+st.warning(prediction_data["new_model"][5:][:30])
+st.warning(prediction_data["current_model"][5:][:30])
 
 
 if prediction_data:
 
     if True:
+        actual = list(map(int,prediction_data["actual"][5:]))
+        actual = [ int(x) if x != -1 else None for x in actual ]
+
+        new_model = list(map(int,prediction_data["new_model"][5:]))
+        new_model = [ int(x) if x != -1 else None for x in new_model ]
+
+        current_model = list(map(int,prediction_data["current_model"][5:]))
+        current_model = [ int(x) if x != -1 else None for x in current_model ]
+
+
         df = pd.DataFrame({
-            "日付": pd.to_datetime(prediction_data["dates"][:1000]),
-            "実際の価格": list(map(int, prediction_data["actual"][:1000])),
-            "新モデル予測": list(map(int,prediction_data["new_model"][:1000])),
-            "現モデル予測": list(map(int,prediction_data["current_model"][:1000]))
+            "日付": pd.to_datetime(prediction_data["dates"][5:]),
+            "実際の価格": actual,
+            "新モデル予測": list(map(int,prediction_data["new_model"][5:])),
+            "現モデル予測": current_model
         })
         # **📊 実際の価格 vs 予測**
         st.subheader("📊 実際の価格と予測結果の比較からモデルを評価")
         fig = px.line(df, x="日付", y=["実際の価格", "新モデル予測", "現モデル予測"],
                     labels={"value": "価格", "variable": "データ"},
                     title="実際の価格 vs 予測値")
-        fig.update_layout(yaxis=dict(range=[0, 100000]))
+        fig.update_layout(yaxis=dict(range=[80000, 120000]))
         st.plotly_chart(fig, use_container_width=True)
 
 

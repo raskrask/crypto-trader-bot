@@ -1,11 +1,13 @@
 import numpy as np
 import pandas as pd
+from datetime import datetime, timedelta
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from models.binance_fetcher import BinanceFetcher
 from models.crypto_training_dataset import CryptoTrainingDataset
 from models.feature_dataset_model import FeatureDatasetModel
 from models.min_max_scaler_processor import MinMaxScalerProcessor
 from models.ensemble_model import EnsembleModel
+from config.config_manager import get_config_manager
 
 class MlEvaluteService:
     def __init__(self):
@@ -14,6 +16,7 @@ class MlEvaluteService:
         self.feature_model = FeatureDatasetModel()
         self.scaler = MinMaxScalerProcessor()
         self.ensemble_model = EnsembleModel()
+        self.config_data = get_config_manager().get_config()
 
     def get_predictions(self):
         """過去データと予測結果を比較して評価"""
@@ -32,34 +35,86 @@ class MlEvaluteService:
     #                "new_model": {"mse": 2, "mae": 4}
     #            }
     #        }
+
+
+
             # 予測結果
+            print("================2>")
             raw_data = self.crypto_data.get_data()
+            print(len(raw_data))
+            print(f"raw_data.len{len(raw_data)}")
             feature_data = self.feature_model.create_features(raw_data)
-            X = feature_data[self.feature_model.feature_columns]
+            print(f"feature_data.len{len(feature_data)}")
+            print(feature_data[0:1])
+
+            X, _ = self.feature_model.select_features(feature_data)
+            print(f"validate rawdata")
+
+            print(raw_data[-1:])
+            print(len(X))
             X, _ = self.scaler.transform(X)
+            print(len(X))
 
             self.ensemble_model.load_model()
             y_pred = self.ensemble_model.predict(X)
+
             X, y_pred = self.scaler.inverse_transform(X, y_pred)
 
+            y_pred = np.array(y_pred).ravel().tolist()
 
-            l=len(raw_data["timestamp"].tolist())
-            min=len(y_pred)
-            X = X[:min]
-            print(X.shape)
 
-            aa = raw_data["timestamp"].tolist()[-min:]
-            bb = raw_data["close_BTC_USDT"].tolist()[-min:]
+            target_lag_Y = self.config_data.get("target_lag_Y")
 
-            print(f"{min} {l} {len(y_pred)} {len(X)} {len(aa)} {len(bb)} {len(raw_data)}")
-            #8832 8819 8819 8819 8819
-            flat_list = np.array(y_pred).ravel().tolist()
+
+
+            # 過去のtimestampデータ
+#            dates = raw_data["timestamp"].iloc[(len(y_pred)-target_lag_Y-1):].tolist()
+            dates = raw_data["timestamp"].iloc[(target_lag_Y-len(y_pred)):].tolist()
+
+
+            future_dates = [(dates[-1] + timedelta(minutes=720 * (i+1))) for i in range(target_lag_Y)]
+            dates.extend(future_dates)
+            print(f"raw_data.iloc2 = {len(dates)}")
+
+            # 実際のBTC価格データ
+            actual = raw_data["close_BTC_USDT"].iloc[(target_lag_Y-len(y_pred)):].tolist()
+            actual.extend([-1] * target_lag_Y)
+
+
+
+
+            #dates = raw_data["timestamp"].tolist()[(feature_lag_X_ATR+target_lag_Y-1):]
+
+
+            #actual = raw_data["close_BTC_USDT"].tolist()[(feature_lag_X_ATR+target_lag_Y-1):]
+
+
+            # ゴールデンクロス用
+#            y_pred = list(y_pred) if isinstance(y_pred, (list, np.ndarray)) else []
+#            actual = list(actual) if isinstance(actual, (list, np.ndarray)) else []
+#            y_pred_array = np.array(y_pred, dtype=np.float64)  # 数値型を明示
+#            actual_array = np.array(actual, dtype=np.float64)  # 数値型を明示
+#            y_pred = y_pred_array * actual_array
+#            y_pred = y_pred.ravel().tolist()
+
+            print(actual[-3:])
+
+
+#            y_pred = y_pred[target_lag_Y:]
+
+#            l=len(raw_data["timestamp"].tolist())
+#            min=len(y_pred)
+#            X = X[:min]
+#            print(X.shape)
+
+
+            print(f"{len(raw_data)} {len(dates)} {len(actual)} {len(y_pred)} ")
 
             result = {
-                "dates": raw_data["timestamp"].tolist()[-min:],
-                "actual": raw_data["close_BTC_USDT"].tolist()[-min:],
-                "current_model": flat_list,
-                "new_model": flat_list,
+                "dates": dates,
+                "actual": actual,
+                "current_model": y_pred,
+                "new_model": y_pred,
                 "evaluation": {
                     "current_model": {"mse": 1, "mae": 2},
                     "new_model": {"mse": 3, "mae": 4}

@@ -169,3 +169,6 @@ class LSTMModel(MLModelBase):
         self.units = params["units"]
         self.learning_rate = params["learning_rate"]
         self.model = self._build_model()
+
+    def get_feature_importance(self, X_train):
+        return None

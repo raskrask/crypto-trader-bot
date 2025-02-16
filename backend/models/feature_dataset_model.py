@@ -1,48 +1,179 @@
 import talib
 import pandas as pd
+from config.config_manager import get_config_manager
 
 class FeatureDatasetModel:
     def __init__(self):
-        self.target_column = "close_BTC_USDT"   # 目的変数カラム名
         self.feature_columns = [ # 説明変数カラムリスト
-            "sma_5",
-            "bollinger_upper",
-            "bollinger_lower",
-            "rsi",
+            "sma_5","sma_10","sma_15","sma_20", "sma_50",
+            "bollinger_upper","bollinger_upper10","bollinger_upper15","bollinger_upper20",
+            "bollinger_lower","bollinger_lower10","bollinger_lower15","bollinger_lower20",
+            "BB_upper", "BB_middle", "BB_lower",
+            "rsi","OBV","RSI_14",
             "tr",
-            "atr"
+            "atr","atr5","atr10","atr15","atr20","ATR_14",
+            "sma_10_lag1", "sma_50_lag1", "RSI_14_lag1", "BB_middle_lag1", "ATR_14_lag1", "OBV_lag1",
+            "sma_10_lag2", "sma_50_lag2", "RSI_14_lag2", "BB_middle_lag2", "ATR_14_lag2", "OBV_lag2",
+            "sma_10_lag3", "sma_50_lag3", "RSI_14_lag3", "BB_middle_lag3", "ATR_14_lag3", "OBV_lag3"
         ]  
+        self.target_column = "target" #close_BTC_USDT"   # 目的変数カラム名
+        self.config_data = get_config_manager().get_config()
+
+
+    def create_features_NEW(self, df):
+        df.set_index("timestamp", inplace=True)
+        column_mapping = {"open_BTC_USDT":"open", "high_BTC_USDT":"high", "low_BTC_USDT":"low", "close_BTC_USDT":"close", "volume_BTC_USDT":"volume"}
+        df = df.rename(columns=column_mapping)
+
+        # テクニカル指標の計算
+        df["SMA_10"] = talib.SMA(df["close"], timeperiod=10)
+        df["SMA_50"] = talib.SMA(df["close"], timeperiod=50)
+        df["RSI_14"] = talib.RSI(df["close"], timeperiod=14)
+        df["BB_upper"], df["BB_middle"], df["BB_lower"] = talib.BBANDS(df["close"], timeperiod=20)
+        df["ATR_14"] = talib.ATR(df["high"], df["low"], df["close"], timeperiod=14)
+        df["OBV"] = talib.OBV(df["close"], df["volume"])
+
+        # ラグ特徴量の作成（過去3日分）
+        lag_features = ["SMA_10", "SMA_50", "RSI_14", "BB_middle", "ATR_14", "OBV"]
+        for lag in range(1, 4):
+            for feature in lag_features:
+                df[f"{feature}_lag{lag}"] = df[feature].shift(lag)
+
+        # 目的変数の作成（未来3日後のリターンがプラスかマイナスかを分類）
+        df["future_return"] = df["close"].shift(-3) / df["close"] - 1
+        df["target"] = (df["future_return"] > 0).astype(int)  # 1: 上昇, 0: 下降
+
+        # 欠損値の除去
+        df.dropna(inplace=True)
+
+        # 説明変数と目的変数
+        X = df.drop(columns=["close", "high", "low", "open", "volume", "future_return", "target"])
+        y = df["target"]
+
+        print("=============> create_features_NEW")
+        print(X.head())
+        print(y.head())
+        
+        return X, y
 
     def create_features(self, df):
         """トレーニングデータら特徴量を作成"""
-        window = 2*24*4
+        window_bb = self.config_data.get("feature_lag_X_BB")
+        window_atr = self.config_data.get("feature_lag_X_ATR")
 
         # 移動平均 (SMA) を作成
-        df["sma_5"] = df["close_BTC_USDT"].rolling(window).mean()
+        df["sma_5"] = df["close_BTC_USDT"].rolling(window=window_bb).mean()
+        df["sma_10"] = df["close_BTC_USDT"].rolling(window=10).mean()
+        df["sma_15"] = df["close_BTC_USDT"].rolling(window=15).mean()
+        df["sma_20"] = df["close_BTC_USDT"].rolling(window=20).mean()
+        df["sma_50"] = df["close_BTC_USDT"].rolling(window=50).mean()
 
         # ボリンジャーバンド
-        df["bollinger_upper"] = df["sma_5"] + 2 * df["close_BTC_USDT"].rolling(window).std()
-        df["bollinger_lower"] = df["sma_5"] - 2 * df["close_BTC_USDT"].rolling(window).std()
+        df["bollinger_upper"] = df["sma_5"] + 2 * df["close_BTC_USDT"].rolling(window=window_bb).std()
+        df["bollinger_lower"] = df["sma_5"] - 2 * df["close_BTC_USDT"].rolling(window=window_bb).std()
+
+        df["BB_upper"], df["BB_middle"], df["BB_lower"] = talib.BBANDS(df["close_BTC_USDT"], timeperiod=20)
+
+
+        df["bollinger_upper10"] = df["sma_10"] + 2 * df["close_BTC_USDT"].rolling(window=10).std()
+        df["bollinger_lower10"] = df["sma_10"] - 2 * df["close_BTC_USDT"].rolling(window=10).std()
+        df["bollinger_upper15"] = df["sma_15"] + 2 * df["close_BTC_USDT"].rolling(window=15).std()
+        df["bollinger_lower15"] = df["sma_15"] - 2 * df["close_BTC_USDT"].rolling(window=15).std()
+        df["bollinger_upper20"] = df["sma_20"] + 2 * df["close_BTC_USDT"].rolling(window=20).std()
+        df["bollinger_lower20"] = df["sma_20"] - 2 * df["close_BTC_USDT"].rolling(window=20).std()
+
+        df["OBV"] = talib.OBV(df["close_BTC_USDT"], df["volume_BTC_USDT"])
+
 
         # RSI の計算（簡易的）
         df["rsi"] = 100 - (100 / (1 + (df["high_BTC_USDT"] / df["low_BTC_USDT"])))
+        df["RSI_14"] = talib.RSI(df["close_BTC_USDT"], timeperiod=14)
 
         # ATR (Average True Range) の計算
-        df["tr"] = df[["high_BTC_USDT", "low_BTC_USDT", "close_VITE_USDT"]].max(axis=1) - df[["high_BTC_USDT", "low_BTC_USDT", "close_BTC_USDT"]].min(axis=1)
-        df["atr"] = df["tr"].rolling(window).mean()
+        df["tr"] = df[["high_BTC_USDT", "low_BTC_USDT", "close_BTC_USDT"]].max(axis=1) - df[["high_BTC_USDT", "low_BTC_USDT", "close_BTC_USDT"]].min(axis=1)
+        df["atr"] = df["tr"].rolling(window=window_atr).mean()
+        df["ATR_14"] = talib.ATR(df["high_BTC_USDT"], df["low_BTC_USDT"], df["close_BTC_USDT"], timeperiod=14)
+
+        df["atr5"] = df["tr"].rolling(window=5).mean()
+        df["atr10"] = df["tr"].rolling(window=10).mean()
+        df["atr15"] = df["tr"].rolling(window=15).mean()
+        df["atr20"] = df["tr"].rolling(window=20).mean()
+
+        lag_features = ["sma_10", "sma_50", "RSI_14", "BB_middle", "ATR_14", "OBV"]
+        for lag in range(1, 4):
+            for feature in lag_features:
+                df[f"{feature}_lag{lag}"] = df[feature].shift(lag)
+
 
         return df.dropna()
 
+    def select_features(self, df):
+        X = df[self.feature_columns]
+        if self.target_column in df.columns:
+            return X, df[self.target_column]
 
-    def create_lagged_features(self, df, future_days):
+        return X, None
+
+    def select_lagged_features(self, df):
         """
-        未来 `future_days` 日後の目的変数に移動した特徴量を返却する。
+        未来 `target_lag_Y` 足の目的変数に移動した特徴量を返却する。
+
+        検討中
+        ① SMA5の未来変動を予測	SMA5の上昇/下降を分類問題にする
+        ② SMAクロスを活用	短期SMAと長期SMAのクロスを見る
+        ③ ボラティリティを考慮	ATRやボリンジャーバンドを特徴量に加える
+
         """
-        X = df[self.feature_columns].shift(-future_days).dropna()
-        y = df[self.target_column][:-future_days]
+        target_lag_Y = self.config_data.get("target_lag_Y")
+
+#        #検証中
+        df = df.copy()
+        df[self.target_column] = df["close_BTC_USDT"].shift(-target_lag_Y)
+        df = df.dropna()
+        X, y = self.select_features(df)
+
+#        X = df[self.feature_columns]
+#        y = df["target"]
 
         return X, y
 
+
+
+
+        X, y = self.select_features(df)
+#        y = y.sort_index(ascending=False)
+        #y = y.rolling(window=target_lag_Y).mean().shift(-(target_lag_Y-1)).dropna()
+
+        # 終値直接指定
+        y = y.shift(-target_lag_Y).dropna()
+
+#        # 短期SMAが長期SMAを上抜ける（ゴールデンクロス）
+#        df_short = y.rolling(window=(target_lag_Y//2)).mean()
+#        df_long = y.rolling(window=target_lag_Y).mean()
+#        y = (df_short > df_long).astype(int)
+
+
+#        y = y.sort_index(ascending=True)
+#        y = y.dropna()
+        y = y.iloc[target_lag_Y:]
+
+        X = X.iloc[-len(y):]
+
+
+        return X, y
+
+
+        # 説明変数をシフト
+        X = X[:-target_lag_Y]  
+
+        # `rolling()` の適用時に `min_periods=1` を指定して NaN の発生を抑える
+        y = y.rolling(window=target_lag_Y, min_periods=1).mean()
+
+        # `dropna()` で `y` が短くなるので、 `X` を `y` の長さに合わせる
+        y = y.dropna()
+        X = X.iloc[-len(y):]  # `y` の行数に `X` を合わせる
+
+        return X, y
 
     def create_features_(self, df):
         open = df['op']

@@ -13,12 +13,12 @@ class CryptoTrainingDataset:
     def __init__(self):
         self.config_data = get_config_manager().get_config()
         self.markets= ['VITE/USDT', 'BTC/USDT']
-        self.interval_min = 15  # 足の間隔。この場合は15分足
+        self.interval_min = 720#15  # 足の間隔。この場合は15分足
 
         self.created_at: datetime = datetime.utcnow()
         self.end_date: datetime = self.created_at.date() - timedelta(days=1)
         self.start_date: datetime = self.end_date - relativedelta(
-            months=self.config_data.get("training_period_months", 3)
+            months=self.config_data.get("training_period_months")
         )
         self.data: pd.DataFrame = pd.DataFrame()
         self.fetcher = BinanceFetcher()
@@ -58,12 +58,12 @@ class CryptoTrainingDataset:
             self.data = additional_data
         else:
             self.data = pd.merge(self.data, additional_data, on="timestamp")
-            merged_df = pd.merge(self.data, additional_data, on="timestamp", how="outer", indicator=True)
+            #merged_df = pd.merge(self.data, additional_data, on="timestamp", how="outer", indicator=True)
         return self.data
 
     def load(self):
         """ S3 から教師データをロード """
-        s3_path = f"training_datasets/{self.start_date}_{self.end_date}.parquet"
+        s3_path = f"training_datasets/{self.start_date}_{self.end_date}_{self.interval_min}.parquet"
         self.data = self.s3.load_parquet_from_s3(s3_path)
         #self.data = pd.DataFrame()
         return self.data
@@ -71,7 +71,7 @@ class CryptoTrainingDataset:
     def save(self):
         """ 教師データを S3 に保存 """
         if self.data is not None and not self.data.empty:
-            s3_path = f"training_datasets/{self.start_date}_{self.end_date}.parquet"
+            s3_path = f"training_datasets/{self.start_date}_{self.end_date}_{self.interval_min}.parquet"
             self.s3.save_parquet_to_s3(self.data, s3_path)
 
     @staticmethod

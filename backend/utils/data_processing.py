@@ -30,17 +30,3 @@ def generate_sequences(data, sequence_length, target_column=0):
     return np.array(sequences), np.array(targets)
 
 
-def convert_to_lag_features(df, target_column, lag_steps):
-    """
-    指定した列をラグ変換して特徴量を作成。
-    - `df`: pandas DataFrame
-    - `target_column`: ラグを作成する対象のカラム名
-    - `lag_steps`: ラグを作成する数（例: 10なら過去10日分のデータを追加）
-    """
-    df_lagged = df.copy()
-    for i in range(1, lag_steps + 1):
-        df_lagged[f"{target_column}_lag_{i}"] = df[target_column].shift(i)
-    
-    df_lagged.dropna(inplace=True)  # 欠損値を削除
-    return df_lagged
-

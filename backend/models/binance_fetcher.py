@@ -29,7 +29,12 @@ class BinanceFetcher:
         # `days` 日前の00:00を起点にデータを取得
         since = self.binance.parse8601((datetime.utcnow() - timedelta(days=days)).strftime('%Y-%m-%dT00:00:00Z'))        
         limit = int(24*60 / interval_min) # 24時間分
-        candles = self.binance.fetch_ohlcv(symbol, timeframe=f"{interval_min}m", since=since, limit=limit)
+        timeframe = f"{interval_min}m"
+        if interval_min > 60 * 24:
+            timeframe = f"{interval_min//60//24}d"
+        elif interval_min > 60:
+            timeframe = f"{interval_min//60}h"
+        candles = self.binance.fetch_ohlcv(symbol, timeframe=f"{timeframe}", since=since, limit=limit)
 
         # DataFrame に変換
         df = pd.DataFrame(candles, columns=["timestamp", "open", "high", "low", "close", "volume"])

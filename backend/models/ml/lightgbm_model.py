@@ -17,6 +17,9 @@ class LightGBMModel(MLModelBase):
             return self.model._Booster.predict(X_test)
         return self.model.predict(X_test)
 
+    def get_feature_importance(self, X_train):
+        return self._get_shap_feature_importance(X_train)
+
     def suggest_hyperparams(self, trial):
         """Optuna でのハイパーパラメータ設定"""
         return {
