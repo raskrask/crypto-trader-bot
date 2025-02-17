@@ -41,8 +41,6 @@ class LSTMModel(MLModelBase):
         X_train_lstm, y_train_lstm = generate_sequences(X_train, self.sequence_length, self.target_column)
         X_train_lstm = X_train_lstm.reshape(X_train_lstm.shape[0], self.sequence_length, X_train_lstm.shape[-1])
 
-        print(f"✅ Debug: X_train_lstm.shape = {X_train_lstm.shape}, y_train_lstm.shape = {y_train_lstm.shape}")
-
         # **モデルの学習**
         self.model.fit(X_train_lstm, y_train_lstm, epochs=epochs, batch_size=batch_size, verbose=1)
 
@@ -62,8 +60,6 @@ class LSTMModel(MLModelBase):
         # **シーケンス変換**
         X_test_lstm, y_test_lstm = generate_sequences(X_test, self.sequence_length, self.target_column)
         X_test_lstm = X_test_lstm.reshape(X_test_lstm.shape[0], self.sequence_length, X_test_lstm.shape[-1])
-
-        print(f"✅ Debug: X_test_lstm.shape = {X_test_lstm.shape}, y_test_lstm.shape = {y_test_lstm.shape}")
 
         # **評価**
         result = self.model.evaluate(X_test_lstm, y_test_lstm, verbose=1)
@@ -85,8 +81,6 @@ class LSTMModel(MLModelBase):
         # **シーケンス変換**
         X_test_lstm, _ = generate_sequences(X_test, self.sequence_length, self.target_column)
         X_test_lstm = X_test_lstm.reshape(X_test_lstm.shape[0], self.sequence_length, X_test_lstm.shape[-1])
-
-        print(f"✅ Debug: X_test_lstm.shape = {X_test_lstm.shape}")
 
         # **予測**
         predictions = self.model.predict(X_test_lstm)

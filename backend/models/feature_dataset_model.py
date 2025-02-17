@@ -50,10 +50,6 @@ class FeatureDatasetModel:
         X = df.drop(columns=["close", "high", "low", "open", "volume", "future_return", "target"])
         y = df["target"]
 
-        print("=============> create_features_NEW")
-        print(X.head())
-        print(y.head())
-        
         return X, y
 
     def create_features(self, df):

@@ -1,6 +1,6 @@
 import traceback
 from fastapi import APIRouter, HTTPException
-from services.ml_evalute_service import MlEvaluteService
+from services.ml_evaluate_service import MlEvaluteService
 
 router = APIRouter()
 ml_service = MlEvaluteService()

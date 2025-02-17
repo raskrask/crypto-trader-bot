@@ -39,32 +39,17 @@ class MlEvaluteService:
 
 
             # 予測結果
-            print("================2>")
             raw_data = self.crypto_data.get_data()
-            print(len(raw_data))
-            print(f"raw_data.len{len(raw_data)}")
             feature_data = self.feature_model.create_features(raw_data)
-            print(f"feature_data.len{len(feature_data)}")
-            print(feature_data[0:1])
-
             X, _ = self.feature_model.select_features(feature_data)
-            print(f"validate rawdata")
-
-            print(raw_data[-1:])
-            print(len(X))
             X, _ = self.scaler.transform(X)
-            print(len(X))
 
             self.ensemble_model.load_model()
             y_pred = self.ensemble_model.predict(X)
 
             X, y_pred = self.scaler.inverse_transform(X, y_pred)
-
             y_pred = np.array(y_pred).ravel().tolist()
-
-
             target_lag_Y = self.config_data.get("target_lag_Y")
-
 
 
             # 過去のtimestampデータ
@@ -82,13 +67,6 @@ class MlEvaluteService:
 
 
 
-
-            #dates = raw_data["timestamp"].tolist()[(feature_lag_X_ATR+target_lag_Y-1):]
-
-
-            #actual = raw_data["close_BTC_USDT"].tolist()[(feature_lag_X_ATR+target_lag_Y-1):]
-
-
             # ゴールデンクロス用
 #            y_pred = list(y_pred) if isinstance(y_pred, (list, np.ndarray)) else []
 #            actual = list(actual) if isinstance(actual, (list, np.ndarray)) else []
@@ -97,15 +75,7 @@ class MlEvaluteService:
 #            y_pred = y_pred_array * actual_array
 #            y_pred = y_pred.ravel().tolist()
 
-            print(actual[-3:])
 
-
-#            y_pred = y_pred[target_lag_Y:]
-
-#            l=len(raw_data["timestamp"].tolist())
-#            min=len(y_pred)
-#            X = X[:min]
-#            print(X.shape)
 
 
             print(f"{len(raw_data)} {len(dates)} {len(actual)} {len(y_pred)} ")

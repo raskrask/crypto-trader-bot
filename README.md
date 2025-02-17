@@ -140,6 +140,16 @@ docker exec -it crypto-trader-bot-backend-1 bash
 docker-compose logs -f backend
 ```
 
+### DotEnv
+```
+S3_BUCKET=
+S3_FOLDER_BASE=
+
+BYBIT_API_KEY=KE***********
+BYBIT_API_SECRET=****************
+BYBIT_BASE_URL=https://api-testnet.bybit.com
+```
+
 ### 作業メモ
 ```
 pip3 freeze > requirements.txt
