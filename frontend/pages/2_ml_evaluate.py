@@ -4,9 +4,9 @@ import pandas as pd
 import plotly.express as px
 from utils.api_client import fetch_predictions
 
-st.set_page_config(page_title="Evalute train models", layout="wide")
+st.set_page_config(page_title="Evaluate train models", layout="wide")
 
-st.title("📈 Evalute train models")
+st.title("📈 Evaluate train models")
 
 # API から予測データを取得
 #@st.cache_data

@@ -45,7 +45,7 @@ class MinMaxScalerProcessor:
 
     def get_s3_filename(self, type):
         """
-        s3_folder/ml_models/evoluting/X_min_max_scaler_Xy.pkl
+        s3_folder/ml_models/staging/X_min_max_scaler_Xy.pkl
         """
         return f"{settings.S3_FOLDER_MODEL}/{self.stage}/min_max_scaler_{type}.pkl"
 
