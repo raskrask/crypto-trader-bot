@@ -28,11 +28,11 @@ while True:
             result = train_model("result")
             status_placeholder.write(f"Result: {result['result']}")
             st.session_state.training_status = "Completed"
-            st.rerun()
+            exec(open("pages/2_ml_evalute.py").read())
             break
         if response["status"] == "Failed":
             status_placeholder.write(f"Result: Failed")
-            st.session_state.training_status = "Completed"
+            st.session_state.training_status = "Failed"
             st.rerun()
             break
     

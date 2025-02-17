@@ -10,9 +10,9 @@ def train_model(mode, method="GET", data=None):
         response = requests.get(url)
     return response.json()
 
-# 2_evalute
+# 2_evaluate
 def fetch_predictions():
-    response = requests.get(f"{settings.API_BASE}/api/ml/evalute/predictions")
+    response = requests.get(f"{settings.API_BASE}/api/ml/evaluate/predictions")
     if response.status_code == 200:
         return response.json()
     else:

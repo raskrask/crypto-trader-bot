@@ -71,8 +71,8 @@ class MlEvaluteService:
 #            dates = raw_data["timestamp"].iloc[(len(y_pred)-target_lag_Y-1):].tolist()
             dates = raw_data["timestamp"].iloc[(target_lag_Y-len(y_pred)):].tolist()
 
-
-            future_dates = [(dates[-1] + timedelta(minutes=720 * (i+1))) for i in range(target_lag_Y)]
+            training_timeframe = self.config_data.get("training_timeframe")
+            future_dates = [(dates[-1] + timedelta(minutes=training_timeframe * (i+1))) for i in range(target_lag_Y)]
             dates.extend(future_dates)
             print(f"raw_data.iloc2 = {len(dates)}")
 

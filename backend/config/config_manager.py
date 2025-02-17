@@ -9,6 +9,7 @@ CONFIG_FILE = "configs/latest_config.json"
 DEFAULT_CONFIG =  {
     "market_symbol": "BTC/JPY",
     "training_period_months": 3,
+    "training_timeframe": 720,
     "ensemble_ratio": 0.5,
     "epochs": 50,
     "test_ratio": 0.2,
@@ -21,6 +22,7 @@ class Config(BaseModel):
     """設定情報のスキーマ"""
     market_symbol: str
     training_period_months: int
+    training_timeframe: int
     ensemble_ratio: float
     epochs: int
     test_ratio: float
