@@ -28,7 +28,6 @@ while True:
             result = train_model("result")
             status_placeholder.write(f"Result: {result['result']}")
             st.session_state.training_status = "Completed"
-            exec(open("pages/2_ml_evaluate.py").read())
             break
         if response["status"] == "Failed":
             status_placeholder.write(f"Result: Failed")
