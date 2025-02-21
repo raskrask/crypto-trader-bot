@@ -2,29 +2,27 @@ import os
 import config.environment
 import pandas as pd
 
-class BaseConfig:
+class BaseSettings:
     """共通設定"""
     APP_NAME = "CryptTradingBot"
     DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
     AWS_REGION = os.getenv("AWS_REGION", "ap-northeast-1")
     S3_BUCKET = os.getenv("S3_BUCKET")
-    S3_FOLDER_BASE = os.getenv("S3_FOLDER_BASE")
-    S3_FOLDER_LIVE = os.getenv("S3_FOLDER_LIVE", f"{S3_FOLDER_BASE}/live_data")
-    S3_FOLDER_HIST = os.getenv("S3_FOLDER_HIST", f"{S3_FOLDER_BASE}/historical_data")
-    S3_FOLDER_MODEL = os.getenv("S3_FOLDER_MODEL", f"{S3_FOLDER_BASE}/ml_models")
 
     BYBIT_API_KEY = os.getenv("BYBIT_API_KEY")
     BYBIT_API_SECRET = os.getenv("BYBIT_API_SECRET")
     BYBIT_BASE_URL = os.getenv("BYBIT_BASE_URL")
 
-class DevelopmentConfig(BaseConfig):
+    SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
+
+class DevelopmentSettings(BaseSettings):
     """開発環境設定"""
     APP_ENV = "development"
     DEBUG = True
     pd.set_option("display.max_columns", None)
 
-class ProductionConfig(BaseConfig):
+class ProductionSettings(BaseSettings):
     """本番環境設定"""
     APP_ENV = "production"
     DEBUG = False
@@ -32,6 +30,6 @@ class ProductionConfig(BaseConfig):
 APP_ENV = os.getenv("APP_ENV", "development")
 
 if APP_ENV == "production":
-    settings = ProductionConfig()
+    settings = ProductionSettings()
 else:
-    settings = DevelopmentConfig()
+    settings = DevelopmentSettings()

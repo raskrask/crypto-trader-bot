@@ -47,6 +47,10 @@ class EnsembleModel:
         for name, model in self.models.items():
             model.load_from_s3(self.stage)
 
+    def save_model(self, stage=None):
+        for name, model in self.models.items():
+            model.load_from_s3(stage or self.stage)
+
     def predict(self, X_test):
         """各モデルの予測結果を統合（平均）"""
         predictions = []

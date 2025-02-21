@@ -7,6 +7,11 @@ Resources:
     Properties:
       BucketName: crypt-trader-bot
 
+  CryptoTraderBotBucketDev:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: crypt-trader-bot-dev
+
   # FetchCryptoDataFunction:
   #   Type: AWS::Serverless::Function
   #   Properties:

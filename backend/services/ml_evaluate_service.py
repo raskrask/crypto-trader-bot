@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from models.binance_fetcher import BinanceFetcher
 from models.crypto_training_dataset import CryptoTrainingDataset
@@ -8,14 +8,11 @@ from models.feature_dataset_model import FeatureDatasetModel
 from models.min_max_scaler_processor import MinMaxScalerProcessor
 from models.ensemble_model import EnsembleModel
 from config.config_manager import get_config_manager
+from utils.s3_helper import get_s3_helper
+from config import constants
 
 class MlEvaluteService:
     def __init__(self):
-        self.fetcher = BinanceFetcher()
-        self.crypto_data = CryptoTrainingDataset()
-        self.feature_model = FeatureDatasetModel()
-        self.scaler = MinMaxScalerProcessor()
-        self.ensemble_model = EnsembleModel()
         self.config_data = get_config_manager().get_config()
 
     def get_predictions(self):
@@ -36,7 +33,11 @@ class MlEvaluteService:
     #            }
     #        }
 
-
+            self.fetcher = BinanceFetcher()
+            self.crypto_data = CryptoTrainingDataset()
+            self.feature_model = FeatureDatasetModel()
+            self.scaler = MinMaxScalerProcessor()
+            self.ensemble_model = EnsembleModel()
 
             # 予測結果
             raw_data = self.crypto_data.get_data()
@@ -135,4 +136,21 @@ class MlEvaluteService:
     #        return predictions
         except Exception as e:
             print(f"Prediction failed: {e}")
+            raise e
+
+    def promote_model(self):
+        """新しいモデルを本番環境に適用"""
+        try:
+            s3 = get_s3_helper()
+
+            fld_stg = f"{constants.S3_FOLDER_MODEL}/staging"
+            fld_prd = f"{constants.S3_FOLDER_MODEL}/production"
+            arc_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            fld_arc = f"{constants.S3_FOLDER_MODEL}/archived/{arc_date}"
+
+            s3.copy_s3_folder_recursive(fld_prd, fld_arc)
+            s3.copy_s3_folder_recursive(fld_stg, fld_prd)
+            return True
+        except Exception as e:
+            print(f"Model promotion failed: {e}")
             raise e

@@ -11,7 +11,7 @@ st.set_page_config(page_title="Explanatory Data Analysis", layout="wide")
 st.title("🔍 Explanatory Data Analysis")
 
 #---------------------------
-if st.button("仮説：アルトコインとBTCの相関関係"):
+if st.button("WIP 仮説：アルトコインとBTCの相関関係"):
 
     st.markdown("""
         ### 仮説
@@ -22,7 +22,8 @@ if st.button("仮説：アルトコインとBTCの相関関係"):
         | 上昇 | 下降 | BTCとともにアルトコインも上昇（アルトシーズン）|
         | 下降 | 上昇 | 投資家がアルトコインからBTCへ資金移動（アルト売り）|
         | 下降 | 下降 | 仮想通貨市場全体が下落（リスク回避でUSDTや法定通貨へ逃避）|
-        """)
+        """,
+        unsafe_allow_html=True)
 
     url = f"{settings.API_BASE}/api/eda/explore"
     response = requests.get(url)
@@ -76,3 +77,35 @@ if st.button("仮説：アルトコインとBTCの相関関係"):
         # ボックスプロット
         fig = px.box(df_vite, y="close", title=f"VITE/USDT の価格分布")
         st.plotly_chart(fig)
+
+
+
+        #---------------------------
+
+if st.button("WIP 仮説：スイングトレードは短期ノイズを排除し、精度の高い予測が可能になる"):
+    st.markdown(
+        """
+        ### 仮説
+        - 短期のノイズに左右されないため、**移動平均線（SMA）やRSI** などの指標が機能しやすい
+        - 短期の小さな値動きを狙う **スキャルピングやデイトレード** は、ボラティリティが高いとリスクも大きくなる
+        - **スイングトレード** は、長期間の値動きを捉えられるため、ボラティリティが高い相場でもリスクを分散しやすい
+
+        ---
+        ### **スキャルピング vs. デイトレード vs. スイングトレード**
+        | 評価項目 | スキャルピング | デイトレード | スイングトレード |
+        | ---- | ---- | ---- | ---- |
+        | **ROI** | 低～中 | 中～高 | 高 |
+        | **勝率** | 50%～60% | 60%～70% | 50%～65% |
+        | **手数料影響** | 大 | 中 | 小 |
+        | **ストレス** | 高 | 中 | 低 |
+        | **適した市場状況** | 高ボラティリティ | 中程度のトレンド | 長期トレンド |
+        """,
+        unsafe_allow_html=True
+    )
+    
+if st.button("WIP OpenAIを使ってトレンドの転換点を正確に捉えられるか？"):
+    pass
+
+if st.button("WIP ボラティリティ予測が可能か？"):
+    st.markdown("予測結果のMSEやRMSEを算出し、精度を評価する")
+

@@ -3,12 +3,11 @@ from typing import Optional
 from functools import lru_cache
 from pydantic import BaseModel
 from utils.s3_helper import get_s3_helper
-
-CONFIG_FILE = "configs/latest_config.json"
+from config import constants
 
 DEFAULT_CONFIG =  {
     "market_symbol": "BTC/JPY",
-    "training_period_months": 3,
+    "training_period_months": 1,
     "training_timeframe": 720,
     "ensemble_ratio": 0.5,
     "epochs": 50,
@@ -31,19 +30,22 @@ class Config(BaseModel):
     target_lag_Y: int
 
 class ConfigManager:
-    def __init__(self):
+    def __init__(self, stage="staging"):
         """S3から設定をロードし、メモリにキャッシュ"""
         self.s3 = get_s3_helper()
+        self.stage = stage
         self.load_config()
 
     def save_config(self, config_data: dict):
         """設定をS3に保存し、キャッシュを更新"""
-        self.s3.save_json_to_s3(config_data, CONFIG_FILE)
+        key = f"{constants.S3_FOLDER_MODEL}/{self.stage}/config.json"
+        self.s3.save_json_to_s3(config_data, key)
         self.config_data = config_data  # メモリキャッシュを更新
 
     def load_config(self) -> Optional[dict]:
         """S3から設定を取得"""
-        self.config_data = self.s3.load_json_from_s3(CONFIG_FILE)
+        key = f"{constants.S3_FOLDER_MODEL}/{self.stage}/config.json"
+        self.config_data = self.s3.load_json_from_s3(key) or {}
         for key, value in DEFAULT_CONFIG.items():
             self.config_data.setdefault(key, value)
 

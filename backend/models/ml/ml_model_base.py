@@ -4,6 +4,7 @@ import pandas as pd
 from abc import ABC, abstractmethod
 from config.settings import settings
 from utils.s3_helper import get_s3_helper
+from config import constants
 
 class MLModelBase(ABC):
     def __init__(self, sequence_model: bool = False):
@@ -52,14 +53,14 @@ class MLModelBase(ABC):
         """
         filename = self._get_model_filename()
         tmp_key = f"tmp/{filename}"
-        s3_key = f"{settings.S3_FOLDER_MODEL}/{stage}/{filename}"
+        s3_key = f"{constants.S3_FOLDER_MODEL}/{stage}/{filename}"
         self._save_model(tmp_key)
         self.s3.upload_to_s3(tmp_key, s3_key, delete_local=True)
 
     def load_from_s3(self, stage):
         filename = self._get_model_filename()
         tmp_key = f"tmp/{filename}"
-        s3_key = f"{settings.S3_FOLDER_MODEL}/{stage}/{filename}"
+        s3_key = f"{constants.S3_FOLDER_MODEL}/{stage}/{filename}"
         if self.s3.download_file( s3_key, tmp_key ):
             self._load_model(tmp_key)
             os.remove(tmp_key) 

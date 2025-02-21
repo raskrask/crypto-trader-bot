@@ -11,6 +11,7 @@ st.title("💰 Trade crypt")
 #---------------------------
 from config.settings import settings
 
-url = f"{settings.API_BASE}/api/trade/test"
-response = requests.get(url)
-st.write(response.json())
+if st.button("Test API"):
+    url = f"{settings.API_BASE}/api/trade/test"
+    response = requests.get(url)
+    st.write(response.json())

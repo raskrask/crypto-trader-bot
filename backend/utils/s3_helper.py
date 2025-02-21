@@ -15,6 +15,7 @@ class S3Helper:
         """S3 クライアントの初期化（シングルトン）"""
         session = boto3.Session(region_name=settings.AWS_REGION)
         self.s3 = session.client("s3")
+        self.s3_resource = boto3.resource("s3")
         self.bucket_name = settings.S3_BUCKET
 
     def upload_to_s3(self, file_path: str, s3_key: str, delete_local: bool = True):
@@ -117,6 +118,17 @@ class S3Helper:
                 logging.warning(f"S3に {s3_key} が見つかりません")
                 return False
             raise
+
+
+    def copy_s3_folder_recursive(self, src_folder, dest_folder):
+        bucket = self.s3_resource.Bucket(self.bucket_name)
+        for obj in bucket.objects.filter(Prefix=src_folder):
+            src_key = obj.key
+            new_key = src_key.replace(src_folder, dest_folder, 1)
+
+            print(f"Copying {src_folder} {dest_folder} =>  /{src_key} -> /{new_key}")
+            self.s3_resource.Object(self.bucket_name, new_key).copy_from(CopySource=f"{self.bucket_name}/{src_key}")
+
 
 # シングルトン化
 @lru_cache

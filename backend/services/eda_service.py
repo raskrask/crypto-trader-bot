@@ -8,12 +8,13 @@ from config.config_manager import get_config_manager
 
 class EdaService:
     def __init__(self):
-        self.crypto_data = CryptoTrainingDataset()
-        self.fetcher = BinanceFetcher()
-        self.coin_gecko = CoinGeckoAPI()
         self.config_data = get_config_manager().get_config()
 
     def explore(self):
+        self.crypto_data = CryptoTrainingDataset()
+        self.fetcher = BinanceFetcher()
+        self.coin_gecko = CoinGeckoAPI()
+
         result = {}
 
         # BTC ドミナンス

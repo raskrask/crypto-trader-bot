@@ -2,7 +2,7 @@ FROM python:3.11
 
 RUN apt-get update && apt-get install -y \
     vim curl wget git zip unzip bash iputils-ping net-tools \
-    libatlas-base-dev \
+    libatlas-base-dev awscli\
     && rm -rf /var/lib/apt/lists/*
   
 RUN cd /tmp \
@@ -25,6 +25,10 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
 
-COPY . .
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+COPY ../.env* .
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["bash", "/entrypoint.sh"]
+
+COPY . .

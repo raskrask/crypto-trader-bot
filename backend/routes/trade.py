@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from models.bibyt_trader import BibitTrader
+from services.auto_trade_service import AutoTradeService
 
 router = APIRouter()
-trader = BibitTrader()
 
 @router.get("/test")
 async def test_trade():
-    return trader.wallet_balance()
+    return AutoTradeService().run()

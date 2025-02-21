@@ -12,6 +12,8 @@ services:
       - UVICORN_RELOAD=true
       - APP_ENV=development
       - AWS_PROFILE=default
+    env_file:
+      - .env.development
 
   frontend:
     build: ./frontend

@@ -10,17 +10,17 @@ from config.config_manager import get_config_manager
 class MlPipelineService:
 
     def __init__(self):
-        self.crypto_data = CryptoTrainingDataset()
-        self.feature_model = FeatureDatasetModel()
-        self.scaler = MinMaxScalerProcessor()
-        self.ensemble_model = EnsembleModel()
-        self.evaluator = Evaluator()
         self.training_status = {"progress": 0, "status": "Not started", "result": None}
         self.config_data = get_config_manager().get_config()
 
     def run_pipeline(self):
         """データ取得 → 特徴量作成 → 学習 → 評価 のパイプライン"""
         try:
+            self.crypto_data = CryptoTrainingDataset()
+            self.feature_model = FeatureDatasetModel()
+            self.scaler = MinMaxScalerProcessor()
+            self.ensemble_model = EnsembleModel()
+            self.evaluator = Evaluator()
 
             # step 1: 市場のトレーニングデータ取得/集計
             self.training_status = {"progress": 10, "status": "Fetching raw crypto data...", "result": None}

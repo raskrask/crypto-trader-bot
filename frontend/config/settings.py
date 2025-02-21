@@ -14,7 +14,7 @@ class ProductionConfig(BaseConfig):
     """本番環境設定"""
     APP_ENV = "production"
     DEBUG = False
-    API_BASE = "http://xx:8000"
+    API_BASE = "http://localhost:8000"
 
 APP_ENV = os.getenv("APP_ENV", "development")
 

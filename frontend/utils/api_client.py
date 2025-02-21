@@ -18,6 +18,10 @@ def fetch_predictions():
     else:
         return None
 
+def promote_model():
+    response = requests.post(f"{settings.API_BASE}/api/ml/evaluate/promote_model")
+    return response.status_code == 200
+
 # 9_config
 def load_config():
     response = requests.get(f"{settings.API_BASE}/api/config")

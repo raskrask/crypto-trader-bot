@@ -1,11 +1,11 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone  
 from dateutil.relativedelta import relativedelta
 
 def get_days_ago(date):
     """
     指定された `date` が現在の日付の何日前かを計算する。
     """
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     delta = today - date
     return delta.days
 

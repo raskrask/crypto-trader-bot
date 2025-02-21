@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from config.settings import settings
 from utils.s3_helper import get_s3_helper
+from config import constants
 
 class MinMaxScalerProcessor:
     def __init__(self, stage="staging", feature_range=(0, 1)):
@@ -47,7 +48,7 @@ class MinMaxScalerProcessor:
         """
         s3_folder/ml_models/staging/X_min_max_scaler_Xy.pkl
         """
-        return f"{settings.S3_FOLDER_MODEL}/{self.stage}/min_max_scaler_{type}.pkl"
+        return f"{constants.S3_FOLDER_MODEL}/{self.stage}/min_max_scaler_{type}.pkl"
 
     def save(self):
         self.s3.save_pkl_to_s3(self.scaler_X, self.get_s3_filename('X'))
