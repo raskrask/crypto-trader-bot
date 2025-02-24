@@ -3,7 +3,7 @@ set -e
 
 echo "TASK_MODE: $TASK_MODE"
 
-aws s3 cp s3://crypt-trader-bot/configs/.env.production .env.production 
+aws s3 cp s3://crypt-trader-bot/env/.env.production .env.production 
 
 if [ "$TASK_MODE" == "api" ]; then
     echo "Starting FastAPI..."

@@ -45,7 +45,6 @@ if prediction_data:
     fig = px.line(df, x="日付", y=["実際の価格", "新モデル予測", "現モデル予測"],
                 labels={"value": "価格", "variable": "データ"},
                 title="実際の価格 vs 予測値")
-    fig.update_layout(yaxis=dict(range=[80000, 120000]))
     st.plotly_chart(fig, use_container_width=True)
 
 

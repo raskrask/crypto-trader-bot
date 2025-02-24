@@ -1,3 +1,4 @@
 import streamlit as st
 
-exec(open("pages/components/dashboard.py").read())
+from pages.components.dashboard import show
+show(st)

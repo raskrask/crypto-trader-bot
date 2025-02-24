@@ -242,6 +242,12 @@ BYBIT_API_SECRET=****************
 BYBIT_BASE_URL=https://api-testnet.bybit.com
 ```
 
+### ECS
+```
+aws ecs describe-clusters --clusters $ECS_CLUSTER
+aws ecs describe-services --cluster $ECS_CLUSTER --services $ECS_SERVICE
+aws ecs list-tasks --cluster $ECS_CLUSTER
+```
 ### 作業メモ
 ```
 pip3 freeze > requirements.txt

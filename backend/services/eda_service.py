@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 from models.crypto_training_dataset import CryptoTrainingDataset
-from models.binance_fetcher import BinanceFetcher
-from models.coingecko_api import CoinGeckoAPI
+from models.exchanges.binance_fetcher import BinanceFetcher
+from models.exchanges.coingecko_api import CoinGeckoAPI
 from config.config_manager import get_config_manager
 
 class EdaService:

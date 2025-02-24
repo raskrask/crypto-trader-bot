@@ -27,12 +27,12 @@ class BinanceFetcher:
         ccxt を使って Binance から VITE/USDT の過去データを取得
         """
         # `days` 日前の00:00を起点にデータを取得
-        since = self.binance.parse8601((datetime.now(datetime.timezone.utc) - timedelta(days=days)).strftime('%Y-%m-%dT00:00:00Z'))        
+        since = self.binance.parse8601((datetime.now(timezone.utc) - timedelta(days=days)).strftime('%Y-%m-%dT00:00:00Z'))        
         limit = int(24*60 / interval_min) # 24時間分
         timeframe = f"{interval_min}m"
-        if interval_min > 60 * 24:
+        if interval_min >= 60 * 24:
             timeframe = f"{interval_min//60//24}d"
-        elif interval_min > 60:
+        elif interval_min >= 60:
             timeframe = f"{interval_min//60}h"
         candles = self.binance.fetch_ohlcv(symbol, timeframe=f"{timeframe}", since=since, limit=limit)
 

@@ -6,6 +6,7 @@ import pandas as pd
 import pickle
 from typing import Any
 from io import BytesIO
+from datetime import datetime
 from botocore.exceptions import ClientError
 from config.settings import settings
 from functools import lru_cache
@@ -128,6 +129,43 @@ class S3Helper:
 
             print(f"Copying {src_folder} {dest_folder} =>  /{src_key} -> /{new_key}")
             self.s3_resource.Object(self.bucket_name, new_key).copy_from(CopySource=f"{self.bucket_name}/{src_key}")
+
+    def get_s3_files(self, prefix):
+        files = []
+        response = self.s3.list_objects_v2(Bucket=self.bucket_name, Prefix=prefix)
+        if 'Contents' in response:
+            for obj in response['Contents']:
+                files.append(obj['Key'])
+        return files
+
+    def get_s3_files_after_date(self, prefix, date_str):
+        """
+        S3から特定のプレフィックスのオブジェクト一覧を取得し、指定した日付以降のファイル名をJSON配列として返す
+
+        :param bucket_name: S3 バケット名
+        :param prefix: S3 プレフィックス (フォルダパスのようなもの)
+        :param date_str: "YYYY-MM-DD" 形式の基準日
+        :return: ファイル名リスト
+        """
+
+        files = []
+        base_date = datetime.strptime(date_str, "%Y-%m-%d")
+        response = self.s3.list_objects_v2(Bucket=self.bucket_name, Prefix=prefix)
+
+        if 'Contents' in response:
+            for obj in response['Contents']:
+                key = obj['Key']
+                try:
+                    file_name = key[len(prefix):]
+                    file_date = datetime.strptime(file_name[:10], "%Y-%m-%d")
+                    if file_date >= base_date:
+                        files.append((file_date, key))
+
+                except ValueError as e:
+                    print(e)
+
+                    continue
+        return files
 
 
 # シングルトン化

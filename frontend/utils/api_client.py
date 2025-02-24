@@ -1,6 +1,14 @@
 import requests
 from config.settings import settings
 
+# 0_Dashboard
+def get_trade_history():
+    response = requests.get(f"{settings.API_BASE}/api/trade/history")
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None
+
 # 1_training
 def train_model(mode, method="GET", data=None):
     url = f"{settings.API_BASE}/api/ml/train/{mode}"

@@ -6,15 +6,17 @@ from utils.s3_helper import get_s3_helper
 from config import constants
 
 DEFAULT_CONFIG =  {
-    "market_symbol": "BTC/JPY",
-    "training_period_months": 1,
-    "training_timeframe": 720,
+    "market_symbol": "btc_jpy",
+    "training_period_months": 18,
+    "training_timeframe": 1440,
     "ensemble_ratio": 0.5,
     "epochs": 50,
     "test_ratio": 0.2,
-    "feature_lag_X_BB": 5,
+    "feature_lag_X_BB": 32,
     "feature_lag_X_ATR": 15,
-    "target_lag_Y": 3
+    "target_lag_Y": 1,
+    "auto_trade_buy_amount": 0.001,
+    "auto_trade_sell_amount": 0.001
 }
 
 class Config(BaseModel):
@@ -28,6 +30,8 @@ class Config(BaseModel):
     feature_lag_X_BB: int
     feature_lag_X_ATR: int
     target_lag_Y: int
+    auto_trade_buy_amount: float
+    auto_trade_sell_amount: float
 
 class ConfigManager:
     def __init__(self, stage="staging"):

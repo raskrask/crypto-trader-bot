@@ -55,18 +55,17 @@ class MlPipelineService:
             y_pred = self.ensemble_model.predict(X_test)
             importance = self.ensemble_model.get_feature_importance(X_test)
             eval_results = self.evaluator.evaluate(y_test, y_pred)
-
-
+            result = {"importance": importance, "eval_results": eval_results}
+            self.training_status = {"progress": 100, "status": "Completed", "result": result}
 #            X_test, y_pred = self.scaler.inverse_transform(X_test, y_pred)
 #            _, y_test = self.scaler.inverse_transform(X_test, y_test)
 
-            print("Evaluation results:")
-            print(importance)
-            for metric, value in eval_results.items():
-                print(f"{metric}: {value:.4f}")
+#            print("Evaluation results:")
+#            print(importance)
+#            for metric, value in eval_results.items():
+#                print(f"{metric}: {value:.4f}")
 
-            self.training_status = {"progress": 100, "status": "Completed", "result": None}
-
+ 
         except Exception as e:
             print(f"Training failed: {e}")
             self.training_status = {"progress": 100, "status": "Failed", "result": str(e), }

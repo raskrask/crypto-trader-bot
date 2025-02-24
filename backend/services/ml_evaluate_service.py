@@ -1,8 +1,9 @@
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta, timezone
+from dateutil.relativedelta import relativedelta
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-from models.binance_fetcher import BinanceFetcher
+from models.exchanges.binance_fetcher import BinanceFetcher
 from models.crypto_training_dataset import CryptoTrainingDataset
 from models.feature_dataset_model import FeatureDatasetModel
 from models.min_max_scaler_processor import MinMaxScalerProcessor
@@ -18,74 +19,45 @@ class MlEvaluteService:
     def get_predictions(self):
         """過去データと予測結果を比較して評価"""
         try:
-            # 過去の実際の価格データ
-    #        past_data = self.fetcher.fetch_ohlcv("VITE/USDT", "1d", 30, 30)
-    #        past_data2 = self.fetcher.fetch_ohlcv("BTC/USDT", "1d", 30, 30)
-
-    #        return {
-    #            "dates": past_data["timestamp"].tolist(),
-    #            "actual": past_data["close"].tolist(),
-    #            "current_model": past_data["close"].tolist(),
-    #            "new_model": past_data.tolist(),
-    #            "evaluation": {
-    #                "current_model": {"mse": 1, "mae": 3},
-    #                "new_model": {"mse": 2, "mae": 4}
-    #            }
-    #        }
-
-            self.fetcher = BinanceFetcher()
             self.crypto_data = CryptoTrainingDataset()
             self.feature_model = FeatureDatasetModel()
-            self.scaler = MinMaxScalerProcessor()
-            self.ensemble_model = EnsembleModel()
 
-            # 予測結果
+            # 教師データを含まない過去の実際の価格データから予測
+            #training_period_months = self.config_data.get("training_period_months")
+            #self.crypto_data.end_date = self.crypto_data.end_date - relativedelta(months=3) # training_period_months
+            self.crypto_data.start_date = self.crypto_data.end_date - relativedelta(months=3)
+
             raw_data = self.crypto_data.get_data()
             feature_data = self.feature_model.create_features(raw_data)
             X, _ = self.feature_model.select_features(feature_data)
-            X, _ = self.scaler.transform(X)
 
-            self.ensemble_model.load_model()
-            y_pred = self.ensemble_model.predict(X)
+            # 予測結果(Staging)
+            scaler_stg = MinMaxScalerProcessor()
+            ensemble_model_stg = EnsembleModel()
+            y_pred_stg = self._predict(scaler_stg, ensemble_model_stg, X)
 
-            X, y_pred = self.scaler.inverse_transform(X, y_pred)
-            y_pred = np.array(y_pred).ravel().tolist()
+            # 予測結果(Production)
+            scaler_prd = MinMaxScalerProcessor(stage="production")
+            ensemble_model_prd = EnsembleModel(stage="production")
+            y_pred_prd = self._predict(scaler_prd, ensemble_model_prd, X)
+
+            # 日付ラベル
             target_lag_Y = self.config_data.get("target_lag_Y")
-
-
-            # 過去のtimestampデータ
-#            dates = raw_data["timestamp"].iloc[(len(y_pred)-target_lag_Y-1):].tolist()
-            dates = raw_data["timestamp"].iloc[(target_lag_Y-len(y_pred)):].tolist()
-
             training_timeframe = self.config_data.get("training_timeframe")
+            dates = raw_data["timestamp"].iloc[(target_lag_Y-len(y_pred_stg)):].tolist()
             future_dates = [(dates[-1] + timedelta(minutes=training_timeframe * (i+1))) for i in range(target_lag_Y)]
             dates.extend(future_dates)
-            print(f"raw_data.iloc2 = {len(dates)}")
 
-            # 実際のBTC価格データ
-            actual = raw_data["close_BTC_USDT"].iloc[(target_lag_Y-len(y_pred)):].tolist()
+            # 実際の価格データ
+            market = self.config_data.get("market_symbol")
+            actual = raw_data[f"close_{market}"].iloc[(target_lag_Y-len(y_pred_stg)):].tolist()
             actual.extend([-1] * target_lag_Y)
-
-
-
-            # ゴールデンクロス用
-#            y_pred = list(y_pred) if isinstance(y_pred, (list, np.ndarray)) else []
-#            actual = list(actual) if isinstance(actual, (list, np.ndarray)) else []
-#            y_pred_array = np.array(y_pred, dtype=np.float64)  # 数値型を明示
-#            actual_array = np.array(actual, dtype=np.float64)  # 数値型を明示
-#            y_pred = y_pred_array * actual_array
-#            y_pred = y_pred.ravel().tolist()
-
-
-
-
-            print(f"{len(raw_data)} {len(dates)} {len(actual)} {len(y_pred)} ")
 
             result = {
                 "dates": dates,
                 "actual": actual,
-                "current_model": y_pred,
-                "new_model": y_pred,
+                "current_model": y_pred_prd,
+                "new_model": y_pred_stg,
                 "evaluation": {
                     "current_model": {"mse": 1, "mae": 2},
                     "new_model": {"mse": 3, "mae": 4}
@@ -93,47 +65,6 @@ class MlEvaluteService:
             }
             return result
 
-    #        X_test = self.data_repo.get_recent_features()
-
-    #        if X_test is None or len(X_test) == 0:
-    #            raise ValueError("予測に必要なデータがありません")
-
-            # モデルをロード
-    #        current_model = self.model_repo.load_current_model()
-    #        new_model = self.model_repo.load_new_model()
-
-            # 予測を実行
-    #        current_pred = current_model.predict(X_test)
-    #        new_pred = new_model.predict(X_test)
-
-            # 誤差を計算
-            mse_current = mean_squared_error(past_data["close"], y_pred)
-            mse_new = mean_squared_error(past_data["close"], y_pred)
-
-            mae_current = mean_absolute_error(past_data["close"], y_pred)
-            mae_new = mean_absolute_error(past_data["close"], y_pred)
-
-            # 返却データを整理
-            return {
-                "dates": past_data["timestamp"].tolist(),
-                "actual": past_data["close"].tolist(),
-                "current_model": y_pred.tolist(),
-                "new_model": y_pred.tolist(),
-                "evaluation": {
-                    "current_model": {"mse": mse_current, "mae": mae_current},
-                    "new_model": {"mse": mse_new, "mae": mae_new}
-                }
-            }
-    #    def predict(self, raw_data):
-    #        """新しいデータを受け取って予測"""
-    #        print("Generating features for new data...")
-    #        feature_data = self.feature_model.create_features(raw_data)
-    #
-    #        X = feature_data[["sma_5", "bollinger_upper", "bollinger_lower", "rsi"]]
-    #
-    #        print("Predicting future prices...")
-    #        predictions = self.ensemble_model.predict(X)
-    #        return predictions
         except Exception as e:
             print(f"Prediction failed: {e}")
             raise e
@@ -154,3 +85,14 @@ class MlEvaluteService:
         except Exception as e:
             print(f"Model promotion failed: {e}")
             raise e
+        
+    def _predict(self, scaler, ensemble_model, X):
+        print(X)
+        X, _ = scaler.transform(X)
+        ensemble_model.load_model()
+        y_pred = ensemble_model.predict(X)
+
+        X, y_pred = scaler.inverse_transform(X, y_pred)
+        y_pred = np.array(y_pred).ravel().tolist()
+
+        return y_pred

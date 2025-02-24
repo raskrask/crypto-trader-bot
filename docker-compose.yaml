@@ -9,6 +9,7 @@ services:
       - ./backend:/app
       - ~/.aws:/root/.aws
     environment:
+      - PYTHONPATH=/app
       - UVICORN_RELOAD=true
       - APP_ENV=development
       - AWS_PROFILE=default

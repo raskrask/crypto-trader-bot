@@ -22,7 +22,8 @@ class FeatureDatasetModel:
 
     def create_features_NEW(self, df):
         df.set_index("timestamp", inplace=True)
-        column_mapping = {"open_BTC_USDT":"open", "high_BTC_USDT":"high", "low_BTC_USDT":"low", "close_BTC_USDT":"close", "volume_BTC_USDT":"volume"}
+        market = self.config_data.get("market_symbol")
+        column_mapping={ f"{x}_{market}":x for x in ["open", "high", "low", "close""volume"]}
         df = df.rename(columns=column_mapping)
 
         # テクニカル指標の計算
@@ -57,38 +58,41 @@ class FeatureDatasetModel:
         window_bb = self.config_data.get("feature_lag_X_BB")
         window_atr = self.config_data.get("feature_lag_X_ATR")
 
+        market = self.config_data.get("market_symbol")
+        target = f"close_{market}"
+
         # 移動平均 (SMA) を作成
-        df["sma_5"] = df["close_BTC_USDT"].rolling(window=window_bb).mean()
-        df["sma_10"] = df["close_BTC_USDT"].rolling(window=10).mean()
-        df["sma_15"] = df["close_BTC_USDT"].rolling(window=15).mean()
-        df["sma_20"] = df["close_BTC_USDT"].rolling(window=20).mean()
-        df["sma_50"] = df["close_BTC_USDT"].rolling(window=50).mean()
+        df["sma_5"] = df[target].rolling(window=window_bb).mean()
+        df["sma_10"] = df[target].rolling(window=10).mean()
+        df["sma_15"] = df[target].rolling(window=15).mean()
+        df["sma_20"] = df[target].rolling(window=20).mean()
+        df["sma_50"] = df[target].rolling(window=50).mean()
 
         # ボリンジャーバンド
-        df["bollinger_upper"] = df["sma_5"] + 2 * df["close_BTC_USDT"].rolling(window=window_bb).std()
-        df["bollinger_lower"] = df["sma_5"] - 2 * df["close_BTC_USDT"].rolling(window=window_bb).std()
+        df["bollinger_upper"] = df["sma_5"] + 2 * df[target].rolling(window=window_bb).std()
+        df["bollinger_lower"] = df["sma_5"] - 2 * df[target].rolling(window=window_bb).std()
 
-        df["BB_upper"], df["BB_middle"], df["BB_lower"] = talib.BBANDS(df["close_BTC_USDT"], timeperiod=20)
+        df["BB_upper"], df["BB_middle"], df["BB_lower"] = talib.BBANDS(df[target], timeperiod=20)
 
 
-        df["bollinger_upper10"] = df["sma_10"] + 2 * df["close_BTC_USDT"].rolling(window=10).std()
-        df["bollinger_lower10"] = df["sma_10"] - 2 * df["close_BTC_USDT"].rolling(window=10).std()
-        df["bollinger_upper15"] = df["sma_15"] + 2 * df["close_BTC_USDT"].rolling(window=15).std()
-        df["bollinger_lower15"] = df["sma_15"] - 2 * df["close_BTC_USDT"].rolling(window=15).std()
-        df["bollinger_upper20"] = df["sma_20"] + 2 * df["close_BTC_USDT"].rolling(window=20).std()
-        df["bollinger_lower20"] = df["sma_20"] - 2 * df["close_BTC_USDT"].rolling(window=20).std()
+        df["bollinger_upper10"] = df["sma_10"] + 2 * df[target].rolling(window=10).std()
+        df["bollinger_lower10"] = df["sma_10"] - 2 * df[target].rolling(window=10).std()
+        df["bollinger_upper15"] = df["sma_15"] + 2 * df[target].rolling(window=15).std()
+        df["bollinger_lower15"] = df["sma_15"] - 2 * df[target].rolling(window=15).std()
+        df["bollinger_upper20"] = df["sma_20"] + 2 * df[target].rolling(window=20).std()
+        df["bollinger_lower20"] = df["sma_20"] - 2 * df[target].rolling(window=20).std()
 
-        df["OBV"] = talib.OBV(df["close_BTC_USDT"], df["volume_BTC_USDT"])
+        df["OBV"] = talib.OBV(df[target], df[f"volume_{market}"])
 
 
         # RSI の計算（簡易的）
-        df["rsi"] = 100 - (100 / (1 + (df["high_BTC_USDT"] / df["low_BTC_USDT"])))
-        df["RSI_14"] = talib.RSI(df["close_BTC_USDT"], timeperiod=14)
+        df["rsi"] = 100 - (100 / (1 + (df[f"high_{market}"] / df[f"low_{market}"])))
+        df["RSI_14"] = talib.RSI(df[target], timeperiod=14)
 
         # ATR (Average True Range) の計算
-        df["tr"] = df[["high_BTC_USDT", "low_BTC_USDT", "close_BTC_USDT"]].max(axis=1) - df[["high_BTC_USDT", "low_BTC_USDT", "close_BTC_USDT"]].min(axis=1)
+        df["tr"] = df[[f"high_{market}", f"low_{market}", target]].max(axis=1) - df[[f"high_{market}", f"low_{market}", target]].min(axis=1)
         df["atr"] = df["tr"].rolling(window=window_atr).mean()
-        df["ATR_14"] = talib.ATR(df["high_BTC_USDT"], df["low_BTC_USDT"], df["close_BTC_USDT"], timeperiod=14)
+        df["ATR_14"] = talib.ATR(df[f"high_{market}"], df[f"low_{market}"], df[target], timeperiod=14)
 
         df["atr5"] = df["tr"].rolling(window=5).mean()
         df["atr10"] = df["tr"].rolling(window=10).mean()
@@ -123,8 +127,9 @@ class FeatureDatasetModel:
         target_lag_Y = self.config_data.get("target_lag_Y")
 
 #        #検証中
+        market = self.config_data.get("market_symbol")
         df = df.copy()
-        df[self.target_column] = df["close_BTC_USDT"].shift(-target_lag_Y)
+        df[self.target_column] = df[f"close_{market}"].shift(-target_lag_Y)
         df = df.dropna()
         X, y = self.select_features(df)
 

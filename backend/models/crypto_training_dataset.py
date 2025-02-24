@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import pandas as pd
 from utils.s3_helper import get_s3_helper
-from models.binance_fetcher import BinanceFetcher
+from models.exchanges.binance_fetcher import BinanceFetcher
 from dateutil.relativedelta import relativedelta
 from config.settings import settings
 from utils.date_helper import get_days_ago
@@ -12,11 +12,11 @@ class CryptoTrainingDataset:
 
     def __init__(self):
         self.config_data = get_config_manager().get_config()
-        self.markets= ['VITE/USDT', 'BTC/USDT']
+        self.markets= ['ETH/JPY', 'BTC/JPY', 'BTC/USDT']
         self.interval_min = self.config_data.get("training_timeframe")  # 足の間隔
 
         self.created_at: datetime = datetime.now(timezone.utc)
-        self.end_date: datetime = self.created_at.date() - timedelta(days=1)
+        self.end_date: datetime = datetime.combine(self.created_at.date() - timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc)
         self.start_date: datetime = self.end_date - relativedelta(
             months=self.config_data.get("training_period_months")
         )
@@ -26,7 +26,7 @@ class CryptoTrainingDataset:
 
     def get_data(self):
         """ 教師データをロード or 収集 & 統合 """
-        self.data = self.load_processed()
+        self.data = None#self.load_processed()
 
         if self.data is None or self.data.empty:
             for symbol in self.markets:
@@ -51,7 +51,7 @@ class CryptoTrainingDataset:
 
     def aggregate(self, symbol: str, additional_data: pd.DataFrame):
         """ 既存のデータに追加のデータを統合 """
-        symbol = symbol.replace('/','_')
+        symbol = symbol.replace('/','_').lower()
         column_mapping = {v: f"{v}_{symbol}" for v in additional_data.columns if v != "timestamp"}
         additional_data = additional_data.rename(columns=column_mapping)
         if self.data is None or self.data.empty:

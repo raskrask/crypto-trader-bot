@@ -14,6 +14,9 @@ class BaseSettings:
     BYBIT_API_SECRET = os.getenv("BYBIT_API_SECRET")
     BYBIT_BASE_URL = os.getenv("BYBIT_BASE_URL")
 
+    COINCHECK_API_KEY = os.getenv("COINCHECK_API_KEY")
+    COINCHECK_API_SECRET = os.getenv("COINCHECK_API_SECRET")
+
     SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
 
 class DevelopmentSettings(BaseSettings):
