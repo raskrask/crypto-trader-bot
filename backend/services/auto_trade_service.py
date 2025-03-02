@@ -5,7 +5,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from models.crypto_training_dataset import CryptoTrainingDataset
 from models.feature_dataset_model import FeatureDatasetModel
-from models.min_max_scaler_processor import MinMaxScalerProcessor
+from models.scalers.log_z_scaler_processor import LogZScalerProcessor
 from models.ensemble_model import EnsembleModel
 from models.exchanges.coincheck_api import CoinCheckAPI
 from config.config_manager import get_config_manager
@@ -24,7 +24,7 @@ class AutoTradeService:
     def run(self):
         self.crypto_data = CryptoTrainingDataset()
         self.feature_model = FeatureDatasetModel()
-        self.scaler = MinMaxScalerProcessor(stage="production")
+        self.scaler = LogZScalerProcessor(stage="production")
         self.ensemble_model = EnsembleModel(stage="production")
         self.coincheck = CoinCheckAPI()
 
@@ -39,8 +39,9 @@ class AutoTradeService:
 
     def _predict(self):
         raw_data = self.crypto_data.get_data()
-        feature_data = self.feature_model.create_features(raw_data)
-        X, _ = self.feature_model.select_features(feature_data)
+#        feature_data = self.feature_model.create_features(raw_data)
+#        X, _ = self.feature_model.select_features(feature_data)
+        X, _  = self.feature_model.create_features(raw_data)
         X, _ = self.scaler.transform(X)
 
         self.ensemble_model.load_model()
@@ -147,7 +148,7 @@ if __name__ == "__main__":
 
     me.crypto_data = CryptoTrainingDataset()
     me.feature_model = FeatureDatasetModel()
-    me.scaler = MinMaxScalerProcessor(stage="production")
+    me.scaler = LogZScalerProcessor(stage="production")
     me.ensemble_model = EnsembleModel(stage="production")
     me.coincheck = CoinCheckAPI()
 

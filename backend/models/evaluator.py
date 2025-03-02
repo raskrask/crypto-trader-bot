@@ -25,4 +25,5 @@ class Evaluator:
 
         return results
 
+        # バックテスト・ウォークフォワード
         

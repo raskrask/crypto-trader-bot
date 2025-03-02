@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import time
 from utils.api_client import train_model
+from pages.components.shap_evalute import show
 
 st.set_page_config(page_title="ML Train")
 
@@ -26,7 +27,8 @@ while True:
         
         if response["status"] == "Completed":
             result = train_model("result")
-            status_placeholder.write(f"Result: {result['result']}")
+            #status_placeholder.write(f"Result: {result['result']}")
+            show(st, result['result'])
             st.session_state.training_status = "Completed"
             break
         if response["status"] == "Failed":

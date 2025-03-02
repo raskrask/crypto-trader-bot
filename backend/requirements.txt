@@ -8,6 +8,7 @@ annotated-types==0.7.0
 anyio==4.8.0
 astunparse==1.6.3
 attrs==25.1.0
+beautifulsoup4==4.13.3
 boto3==1.36.16
 botocore==1.36.16
 ccxt==4.4.57
@@ -26,6 +27,7 @@ fastapi==0.115.8
 fastparquet==2024.11.0
 flatbuffers==25.1.24
 fonttools==4.56.0
+frozendict==2.4.6
 frozenlist==1.5.0
 fsspec==2025.2.0
 gast==0.6.0
@@ -51,6 +53,7 @@ matplotlib==3.10.0
 mdurl==0.1.2
 ml-dtypes==0.4.1
 multidict==6.1.0
+multitasking==0.0.11
 namex==0.0.8
 numba==0.61.0
 numpy==2.0.2
@@ -59,7 +62,9 @@ optree==0.14.0
 optuna==4.2.0
 packaging==24.2
 pandas==2.2.3
+peewee==3.17.9
 pillow==11.1.0
+platformdirs==4.3.6
 pluggy==1.5.0
 propcache==0.2.1
 protobuf==5.29.3
@@ -84,6 +89,7 @@ shap==0.46.0
 six==1.17.0
 slicer==0.0.8
 sniffio==1.3.1
+soupsieve==2.6
 SQLAlchemy==2.0.38
 starlette==0.45.3
 ta-lib @ git+https://github.com/TA-Lib/ta-lib-python.git@1582434101ee5387765c0dee97f5b4a465f78458
@@ -102,3 +108,4 @@ Werkzeug==3.1.3
 wrapt==1.17.2
 xgboost==2.1.4
 yarl==1.18.3
+yfinance==0.2.54

@@ -1,7 +1,7 @@
 import numpy as np
 from models.crypto_training_dataset import CryptoTrainingDataset
 from models.feature_dataset_model import FeatureDatasetModel
-from models.min_max_scaler_processor import MinMaxScalerProcessor
+from models.scalers.log_z_scaler_processor import LogZScalerProcessor
 from models.ensemble_model import EnsembleModel
 from models.evaluator import Evaluator
 from sklearn.model_selection import train_test_split
@@ -18,7 +18,7 @@ class MlPipelineService:
         try:
             self.crypto_data = CryptoTrainingDataset()
             self.feature_model = FeatureDatasetModel()
-            self.scaler = MinMaxScalerProcessor()
+            self.scaler = LogZScalerProcessor()
             self.ensemble_model = EnsembleModel()
             self.evaluator = Evaluator()
 
@@ -28,21 +28,10 @@ class MlPipelineService:
 
             # step 2: 特徴量エンジニアリング
             self.training_status = {"progress": 20, "status": "Processing feature dataset...", "result": None}
-            feature_data = self.feature_model.create_features(raw_data)
-            X, y = self.feature_model.select_lagged_features(feature_data)
-#            X, y = self.feature_model.create_features_NEW(raw_data)
+#            feature_data = self.feature_model.create_features(raw_data)
+#            X, y = self.feature_model.select_lagged_features(feature_data)
+            X, y  = self.feature_model.create_features(raw_data)
             X, y = self.scaler.fit_transform(X, y)
-
-#            # ラグ特徴量を簡単に作成
-#            lag_transformer = LagFeatures(variables=["close"], lags=[1, 2, 3])
-#            df_transformed = lag_transformer.fit_transform(df)
-#            print(df_transformed.head())
-#                        rolling_transformer = WindowFeatures(
-#                            variables=["close"],
-#                            window=[3],  # 3期間のローリング
-#                            functions=["mean", "std"]  # 移動平均と標準偏差
-#                        )
-
 
             # step 3: アンサンブル学習 + 自動チューニング（ハイパーパラメータ最適化 Optuna）
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0, shuffle=True)

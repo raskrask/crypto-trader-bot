@@ -6,7 +6,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from models.exchanges.binance_fetcher import BinanceFetcher
 from models.crypto_training_dataset import CryptoTrainingDataset
 from models.feature_dataset_model import FeatureDatasetModel
-from models.min_max_scaler_processor import MinMaxScalerProcessor
+from models.scalers.log_z_scaler_processor import LogZScalerProcessor
 from models.ensemble_model import EnsembleModel
 from config.config_manager import get_config_manager
 from utils.s3_helper import get_s3_helper
@@ -28,18 +28,22 @@ class MlEvaluteService:
             self.crypto_data.start_date = self.crypto_data.end_date - relativedelta(months=3)
 
             raw_data = self.crypto_data.get_data()
-            feature_data = self.feature_model.create_features(raw_data)
-            X, _ = self.feature_model.select_features(feature_data)
+#            feature_data = self.feature_model.create_features(raw_data)
+#            X, _ = self.feature_model.select_features(feature_data)
+            X, _  = self.feature_model.create_features(raw_data)
 
             # 予測結果(Staging)
-            scaler_stg = MinMaxScalerProcessor()
+            scaler_stg = LogZScalerProcessor()
             ensemble_model_stg = EnsembleModel()
             y_pred_stg = self._predict(scaler_stg, ensemble_model_stg, X)
 
-            # 予測結果(Production)
-            scaler_prd = MinMaxScalerProcessor(stage="production")
-            ensemble_model_prd = EnsembleModel(stage="production")
-            y_pred_prd = self._predict(scaler_prd, ensemble_model_prd, X)
+            # 予測結果(Production)        
+            try:
+                scaler_prd = LogZScalerProcessor(stage="production")
+                ensemble_model_prd = EnsembleModel(stage="production")
+                y_pred_prd = self._predict(scaler_prd, ensemble_model_prd, X)
+            except Exception as e:
+                y_pred_prd = y_pred_stg
 
             # 日付ラベル
             target_lag_Y = self.config_data.get("target_lag_Y")

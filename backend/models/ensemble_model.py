@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from models.ml.random_forest_model import RandomForestModel
 from models.ml.xgboost_model import XGBoostModel
 from models.ml.lightgbm_model import LightGBMModel
@@ -10,9 +11,9 @@ class EnsembleModel:
         """ 各モデルを初期化（S3 からロードできる場合はロード） """
         self.stage = stage
         self.models = {
-#            "random_forest": RandomForestModel(),
+            "random_forest": RandomForestModel(),
             "xgboost": XGBoostModel(),
-#            "lightgbm": LightGBMModel(),
+            "lightgbm": LightGBMModel(),
 #            "lstm": LSTMModel(sequence_length=sequence_length),
         }
 
@@ -68,7 +69,15 @@ class EnsembleModel:
         return np.mean(predictions, axis=0).tolist()
 
     def get_feature_importance(self, X_test):
-        results = []
+        results_list = []
         for name, model in self.models.items():
-            results.append(model.get_feature_importance(X_test))
-        return results
+            feature_importance_df = model.get_feature_importance(X_test)
+            feature_importance_df = feature_importance_df.reset_index()
+            feature_importance_df.columns = ["Feature", "Importance"]
+            feature_importance_df["ModelName"] = name
+
+            results_list.append(feature_importance_df)
+
+        return pd.concat(results_list, ignore_index=True)
+
+
