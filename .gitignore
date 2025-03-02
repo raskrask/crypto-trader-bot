@@ -1,0 +1,43 @@
+# 仮想環境
+venv311/
+.env*
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+poetry.lock
+
+# Python の不要ファイル
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ログファイル
+tmp/
+logs/
+*.log
+
+# Jupyter Notebook のチェックポイント
+.ipynb_checkpoints/
+
+# VSCode 設定
+.vscode/
+
+# Mac OS の不要ファイル
+.DS_Store
+
+# AWS & Secrets
+*.pem
+*.key
+aws_config/
+secrets.json
+config/settings.yaml  # APIキーなどの設定ファイル
+
+# バイナリファイル
+*.so
+*.dll
+*.dylib
+
+# AWS SAM ビルド生成ファイル
+.aws-sam/
+.sam-*
+
