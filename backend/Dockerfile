@@ -2,7 +2,7 @@ FROM python:3.11
 
 RUN apt-get update && apt-get install -y \
     vim curl wget git zip unzip bash iputils-ping net-tools \
-    libatlas-base-dev awscli\
+    libatlas3-base awscli\
     && rm -rf /var/lib/apt/lists/*
   
 RUN cd /tmp \
@@ -13,7 +13,7 @@ RUN cd /tmp \
     && wget -O config.sub https://git.savannah.gnu.org/cgit/config.git/plain/config.sub \
     && chmod +x config.guess config.sub \
     && ./configure --prefix=/usr/local \
-    && (make -j4 || make) \
+    && make \
     && make install \
     && rm -rf /tmp/ta-lib* \
     && echo "/usr/lib" >> /etc/ld.so.conf \
