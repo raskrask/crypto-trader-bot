@@ -1,4 +1,3 @@
-import yfinance as yf 
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 from datetime import datetime, timedelta
