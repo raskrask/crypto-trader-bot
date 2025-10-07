@@ -100,16 +100,16 @@ class LSTMModel(MLModelBase):
             LSTM(64, return_sequences=False),
             Dropout(0.2),
             Dense(32, activation="relu"),
-            Dense(1)
+            Dense(1, activation="sigmoid")
         ])
-        model.compile(optimizer=Adam(learning_rate=self.learning_rate), loss='mse', metrics=['mae'])
+        model.compile(optimizer=Adam(learning_rate=self.learning_rate), loss='binary_crossentropy', metrics=['accuracy'])
         return model
 
-    def _save_model(self, path):
+    def _export_model(self, path):
         """モデルを保存"""
         save_model(self.model, path)
 
-    def _load_model(self, path):
+    def _import_model(self, path):
         """モデルをロード"""
         self.model = load_model(path)
 

@@ -3,6 +3,7 @@ import pandas as pd
 from fastapi.encoders import jsonable_encoder
 from scipy.signal import find_peaks
 from datetime import datetime, timedelta
+from models.feature_dataset_model import FeatureDatasetModel
 from models.crypto_training_dataset import CryptoTrainingDataset
 from models.exchanges.binance_fetcher import BinanceFetcher
 from models.exchanges.yfinance_fetcher import YFinanceFetcher
@@ -36,16 +37,31 @@ class EdaService:
     # ボックス相場の検出
     # 
     def box_market_price (self):
-        #self.fetcher = BinanceFetcher()
-        #symbol = 'BTC/USDT'
-        #data = self.fetcher.fetch_ohlcv(symbol, "1d", 360, 360)
-        #df = pd.DataFrame(data)
+        self.fetcher = BinanceFetcher()
+        symbol = 'BTC/JPY'
+        data = self.fetcher.fetch_ohlcv(symbol, "1d", 360, 360)
+        df = pd.DataFrame(data)
 
-        fetcher = YFinanceFetcher()
-        symbol = '6758.T'
-        df = fetcher.fetch_last_n_months(symbol, n=12)
-        print(df.head())
+        symbol = symbol.replace('/','_').lower()
+        for v in df.columns:
+            if v != "timestamp":
+                df[f"{v}_{symbol}"] = df[v].copy()
 
+        #fetcher = YFinanceFetcher()
+        #symbol = '6758.T'
+        #df = fetcher.fetch_last_n_months(symbol, n=12)
+        #print(df.head())
+
+        feature_model = FeatureDatasetModel()
+        x, y = feature_model.create_features(df)
+        df = pd.concat([df, x], axis=1)
+        df = pd.concat([df, y], axis=1)
+        df.dropna(inplace=True)
+
+
+
+        # best trade（検証）
+#        b = self.best_trade(df)
 
         window_size = 20
         df['rolling_max'] = df['high'].rolling(window=window_size).max()
@@ -101,9 +117,49 @@ class EdaService:
 
         data = df[['timestamp', 'open', 'high', 'low', 'close', 'volume', 
                'rolling_max', 'rolling_min', 'sma', 'high_points', 'low_points', 'is_high_volume',
+               'buy_signal', 'sell_signal','ma_cross_up_5_20',
                'in_box','volatility','bb_width','std']].to_dict(orient='records')
 
         return jsonable_encoder(data)
+
+
+    def best_trade(self, df: pd.DataFrame):
+        """
+        df: OHLCVを含むDataFrame（'timestamp', 'close' 必須）
+        return: 最良の買い日, 売り日, 最大リターン
+        """
+            
+        prices = df["close"].rolling(window=5).mean().values
+        #prices = df["close"].values
+        dates = df["timestamp"].values
+        n = len(prices)
+
+        best_yield = -float("inf")
+        best_buy = best_sell = best_return = None
+        best_days = 0
+
+        for i in range(n):  # 買い日
+            for j in range(i+2, n):  # 売り日
+                buy_price = prices[i]
+                sell_price = prices[j]
+                days = (dates[j] - dates[i]).days
+
+                if days <= 0:  # 売り日は必ず買い日より後
+                    continue
+
+                # 利回り（単純リターンを年率換算）
+                simple_return = (sell_price - buy_price) / buy_price
+                annualized_return = (1 + simple_return) ** (365 / days) - 1
+
+                if annualized_return > best_yield:
+                    best_yield = annualized_return
+                    best_buy = dates[i]
+                    best_sell = dates[j]
+                    best_return = simple_return
+                    best_days = days
+
+        print(f"Best Buy: {best_buy}, Best Sell: {best_sell}, Best Yield: {best_yield*100:.2f}%, Days Held: {best_days}, simple_return: {best_return*100:.2f}%")
+        return best_buy, best_sell, best_yield, best_days
 
     # 出来高の多い日を検出（３ヶ月間で集計）
     def _detect_high_volume_days(self, df, window_size=90, volume_ratio=1.5, cv_threshold=0.3):

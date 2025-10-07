@@ -18,11 +18,11 @@ class RandomForestModel(MLModelBase):
     def get_feature_importance(self, X_train):
         return self._get_shap_feature_importance(X_train)
 
-    def _save_model(self, path):
+    def _export_model(self, path):
         with open(path, "wb") as f:
             pickle.dump(self.model, f)
 
-    def _load_model(self, path):
+    def _import_model(self, path):
         with open(path, "rb") as f:
             self.model = pickle.load(f)
 

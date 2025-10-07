@@ -25,12 +25,12 @@ class MlEvaluteService:
             # 教師データを含まない過去の実際の価格データから予測
             #training_period_months = self.config_data.get("training_period_months")
             #self.crypto_data.end_date = self.crypto_data.end_date - relativedelta(months=3) # training_period_months
-            self.crypto_data.start_date = self.crypto_data.end_date - relativedelta(months=3)
+            self.crypto_data.start_date = self.crypto_data.end_date - relativedelta(months=12)
 
             raw_data = self.crypto_data.get_data()
 #            feature_data = self.feature_model.create_features(raw_data)
 #            X, _ = self.feature_model.select_features(feature_data)
-            X, _  = self.feature_model.create_features(raw_data)
+            X, y  = self.feature_model.create_features(raw_data)
 
             # 予測結果(Staging)
             scaler_stg = LogZScalerProcessor()
@@ -54,11 +54,14 @@ class MlEvaluteService:
 
             # 実際の価格データ
             market = self.config_data.get("market_symbol")
-            actual = raw_data[f"close_{market}"].iloc[(target_lag_Y-len(y_pred_stg)):].tolist()
+#            actual = raw_data[f"close_{market}"].iloc[(target_lag_Y-len(y_pred_stg)):].tolist()
+#            actual.extend([-1] * target_lag_Y)
+            actual = y['buy_signal'].iloc[(target_lag_Y-len(y_pred_stg)):].tolist()
             actual.extend([-1] * target_lag_Y)
 
             result = {
                 "dates": dates,
+                "price": raw_data[f"close_{market}"].tolist(),
                 "actual": actual,
                 "current_model": y_pred_prd,
                 "new_model": y_pred_stg,
@@ -91,12 +94,13 @@ class MlEvaluteService:
             raise e
         
     def _predict(self, scaler, ensemble_model, X):
-        print(X)
-        X, _ = scaler.transform(X)
-        ensemble_model.load_model()
+        X, _ = scaler.transform(X, None, 'buy_signal')
+        ensemble_model.load_model('buy_signal')
         y_pred = ensemble_model.predict(X)
+        print(f"Predictions: {y_pred[10:20]} ...")
 
-        X, y_pred = scaler.inverse_transform(X, y_pred)
+        X, _ = scaler.inverse_transform(X, y_pred, 'buy_signal')
         y_pred = np.array(y_pred).ravel().tolist()
+        print(f"Predictions: {y_pred[10:20]} ...")
 
         return y_pred

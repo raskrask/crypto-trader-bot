@@ -25,4 +25,3 @@ async def get_training_result():
         return {"message": "Training is not completed yet"}
     
     return {"result": pipeline.training_status["result"]}
-

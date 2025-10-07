@@ -5,11 +5,12 @@ import plotly.express as px
 def show(st, result):
 
     st.write("モデル評価指標")
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("MSE", f"{result['eval_results']['MSE']:.4f}")
-    col2.metric("RMSE", f"{result['eval_results']['RMSE']:.4f}")
-    col3.metric("MAE", f"{result['eval_results']['MAE']:.4f}")
-    col4.metric("R² Score", f"{result['eval_results']['R2 Score']:.3f}")
+    col1, col2, col3, col4, col5 = st.columns(5)
+    col1.metric("Accuracy", f"{result['Accuracy']:.4f}")
+    col2.metric("MSE", f"{result['eval_results']['MSE']:.4f}")
+    col3.metric("RMSE", f"{result['eval_results']['RMSE']:.4f}")
+    col4.metric("MAE", f"{result['eval_results']['MAE']:.4f}")
+    col5.metric("R² Score", f"{result['eval_results']['R2 Score']:.3f}")
 
     # 辞書を DataFrame に変換
     data = result["importance"]

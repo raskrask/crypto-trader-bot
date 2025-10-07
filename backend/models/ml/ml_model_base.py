@@ -21,11 +21,11 @@ class MLModelBase(ABC):
         pass
 
     @abstractmethod
-    def _save_model(self, path):
+    def _export_model(self, path):
         pass
 
     @abstractmethod
-    def _load_model(self, path):
+    def _import_model(self, path):
         pass
 
     @abstractmethod
@@ -47,21 +47,21 @@ class MLModelBase(ABC):
     def is_sequence_model(self):
         return self.sequence_model 
 
-    def save_to_s3(self, stage):
+    def save_to_s3(self, stage, y_name):
         """
         s3_folder/ml_models/staging/lstm_model.keras
         """
         filename = self._get_model_filename()
         tmp_key = f"tmp/{filename}"
-        s3_key = f"{constants.S3_FOLDER_MODEL}/{stage}/{filename}"
-        self._save_model(tmp_key)
+        s3_key = f"{constants.S3_FOLDER_MODEL}/{stage}/{y_name}/{filename}"
+        self._export_model(tmp_key)
         self.s3.upload_to_s3(tmp_key, s3_key, delete_local=True)
 
-    def load_from_s3(self, stage):
+    def load_from_s3(self, stage, y_name):
         filename = self._get_model_filename()
         tmp_key = f"tmp/{filename}"
-        s3_key = f"{constants.S3_FOLDER_MODEL}/{stage}/{filename}"
+        s3_key = f"{constants.S3_FOLDER_MODEL}/{stage}/{y_name}/{filename}"
         if self.s3.download_file( s3_key, tmp_key ):
-            self._load_model(tmp_key)
+            self._import_model(tmp_key)
             os.remove(tmp_key) 
 

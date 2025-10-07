@@ -63,10 +63,14 @@ if st.button("ボックス相場をもとにトレード戦略の有効性"):
 
     # 出来高
     high_volume = df[df['is_high_volume']]
+    buy_signal = df[df['buy_signal'] == 1]
+    sell_signal = df[df['sell_signal'] == 1]
+
     colors = ["green" if c > o else "red" for c, o in zip(df["close"], df["open"])]
     traces = [
         go.Bar(x=df["timestamp"], y=df["volume"], name="出来高", marker=dict(color=colors)),
-        go.Scatter(x=high_volume["timestamp"], y=high_volume["volume"], mode="markers", name="high_volume", marker=dict(color="red", size=8, symbol="circle"))
+        go.Scatter(x=buy_signal["timestamp"], y=buy_signal["buy_signal"]*100, mode="markers", name="buy_signal", marker=dict(color="blue", size=10, symbol="triangle-up")),
+        go.Scatter(x=sell_signal["timestamp"], y=sell_signal["sell_signal"]*-100, mode="markers", name="sell_signal", marker=dict(color="orange", size=10, symbol="triangle-down"))
     ]
     for t in traces:
         fig.add_trace(t, row=2, col=1)

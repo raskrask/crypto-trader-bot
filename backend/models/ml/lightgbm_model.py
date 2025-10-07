@@ -34,10 +34,10 @@ class LightGBMModel(MLModelBase):
         """最適化されたハイパーパラメータを適用"""
         self.model.set_params(**params)
 
-    def _save_model(self, path):
+    def _export_model(self, path):
         self.model.booster_.save_model(path)
 
-    def _load_model(self, path):
+    def _import_model(self, path):
         self.model = LGBMRegressor()
         self.model._Booster = Booster(model_file=path)
         self.is_booster_loaded = True
