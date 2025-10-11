@@ -1,5 +1,7 @@
 import talib
 import pandas as pd
+import numpy as np
+from datetime import datetime
 from models.economic_data import EconomicData
 from config.config_manager import get_config_manager
 
@@ -14,7 +16,9 @@ FEATURE_CONFIG = {
     "lag_days": 3,                         # 過去データのラグ数
     "use_features": [                      # 使用する特徴量
         "SMA", "RSI", "ATR", "BOLL", "OBV", "MACD", "STOCH"
-    ]
+    ],
+    "trade_signals_threshold": 0.02,  # 売買シグナルの閾値
+    "trade_signals_window": 21,    # 売買シグナルの計算ウィンドウ
 }
 
 class FeatureDatasetModel:
@@ -26,14 +30,22 @@ class FeatureDatasetModel:
         df = df.copy()
         df = self._add_technical_features(df)
         df = self._add_lag_features(df)
-        df = self._add_economic_features(df)
+        df = self._add_return_signals(df)
         df.dropna(inplace=True)
 
         # ---- 説明変数と目的変数の分割 ----
         X = df[self.feature_columns]
-        y = df["target"]
+        Y = df[['buy_signal', 'sell_signal']]
 
-        return X, y
+        return X, Y
+
+#        y_buy = df[['target']]
+
+#        return X, y_buy, None
+#        y_buy = df[['buy_signal']].rename(columns={'buy_signal': 'target'})
+#        y_sell = df[['sell_signal']].rename(columns={'sell_signal': 'target'})
+
+#        return X, y_buy, y_sell
 
     def _add_technical_features(self, df):
         df = df.copy()
@@ -43,12 +55,25 @@ class FeatureDatasetModel:
         low = df[f"low_{market}"]
         close = df[f"close_{market}"]
         volume = df[f"volume_{market}"]
+        self.feature_columns.extend([f"open_{market}", f"high_{market}", f"low_{market}", f"close_{market}", f"volume_{market}"])
 
         # ---- (1) 移動平均 (SMA) ----
         for period in FEATURE_CONFIG["sma_periods"]:
             df[f"sma_{period}"] = talib.SMA(close, timeperiod=period)
             self.feature_columns.append(f"sma_{period}")
 
+        # 移動平均クロス（短期が長期を上抜け → 買いシグナル候補）
+        # 売りシグナル：逆クロス OR 将来利回りが-閾値以下
+        for period_1 in FEATURE_CONFIG["sma_periods"]:
+            for period_2 in FEATURE_CONFIG["sma_periods"]:
+                if period_1 < period_2:
+                    df_period_1 = df[f"sma_{period_1}"]
+                    df_period_2 = df[f"sma_{period_2}"]
+                    df[f"ma_cross_up_{period_1}_{period_2}"] = ((df_period_1 > df_period_2) & (df_period_1.shift(1) <= df_period_2.shift(1))).astype(int) 
+                    df[f"ma_cross_down_{period_1}_{period_2}"] = ((df_period_1 < df_period_2) & (df_period_1.shift(1) >= df_period_2.shift(1))).astype(int) 
+                    self.feature_columns.append(f"ma_cross_up_{period_1}_{period_2}")
+                    self.feature_columns.append(f"ma_cross_down_{period_1}_{period_2}")
+        
         # ---- (2) ボリンジャーバンド (BOLL) ----
         for period in FEATURE_CONFIG["bollinger_periods"]:
             upper, middle, lower = talib.BBANDS(close, timeperiod=period)
@@ -98,29 +123,41 @@ class FeatureDatasetModel:
         df = pd.concat([df, pd.DataFrame(lagged_features)], axis=1)
         self.feature_columns.extend(columns)
 
-        # ---- 目的変数 (ターゲット) ----
+        # ---- 旧目的変数 (ターゲット) ----
         market = self.config_data.get("market_symbol")
         close = df[f"close_{market}"]
 #        df["future_return"] = close.shift(-lag_days) / close - 1
 #        df["target"] = (df["future_return"] > 0).astype(int)  # 上昇: 1, 下降: 0
-        df["target"] = close.shift(-lag_days)
+#        df["target"] = close.shift(-lag_days)
 
         return df
 
-    def _add_economic_features(self, df):
-        economic_data = EconomicData()
-        economic_df = economic_data.get_economic_indicators(df["timestamp"][0])
-        all_dates = pd.DataFrame({"timestamp": pd.date_range(start=economic_df["timestamp"].min(), 
-                                                     end=economic_df["timestamp"].max(), freq="D")})
-        economic_df = all_dates.merge(economic_df, on="timestamp", how="left")
-        economic_df = economic_df.ffill()
 
-        df = df.merge(economic_df, on="timestamp", how="left")
+    def _add_return_signals(self, df,
+                            lag_days = 20, return_threshold = 0.03):
+        """
+        移動平均クロスと将来リターン閾値で買い・売りシグナルを作成する。
+        
+        Args:
+            lag_days (int): 将来リターンを計算する日数
+            return_threshold (float): 利回りの閾値（例: 0.03 = 3%）
+        
+        Returns:
+            pd.DataFrame: シグナル列 'buy_signal', 'sell_signal' を追加したDataFrame
+        """
+        df = df.copy()
 
-        economic_columns = [col for col in economic_df.columns if col != "timestamp"]
-        self.feature_columns.extend(economic_columns)
+        market = self.config_data.get("market_symbol")
+        df["max_close"] = df[f"close_{market}"].rolling(lag_days).max().shift(-lag_days)
+        df["min_close"] = df[f"close_{market}"].rolling(lag_days).min().shift(-lag_days)
+        df['buy_signal'] = 0
+        df['sell_signal'] = 0
 
-        # 影響度がつよすぎるため重みをつける
-        economic_df[economic_columns] = economic_df[economic_columns] * 0.001
+        df["max_return"] = df["max_close"] / df[f"close_{market}"]
+        df["min_return"] = df["min_close"] / df[f"close_{market}"]
+        df['buy_signal'] =  (df["max_return"] > (1+return_threshold)).astype(int) 
+        df['sell_signal'] = (df["min_return"] < (1-return_threshold)).astype(int) 
+        df.loc[(df['buy_signal'] == 1) & (df['sell_signal'] == 1), ['buy_signal','sell_signal']] = 0
+        df.dropna(inplace=True)
 
         return df

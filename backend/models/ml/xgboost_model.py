@@ -14,10 +14,10 @@ class XGBoostModel(MLModelBase):
     def predict(self, X_test):
         return self.model.predict(X_test)
 
-    def _save_model(self, path):
+    def _export_model(self, path):
         self.model.save_model(path)
 
-    def _load_model(self, path):
+    def _import_model(self, path):
         self.model.load_model(path)
 
     def _get_model_filename(self):

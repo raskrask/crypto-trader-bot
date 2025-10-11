@@ -44,7 +44,7 @@ class AutoTradeService:
         X, _  = self.feature_model.create_features(raw_data)
         X, _ = self.scaler.transform(X)
 
-        self.ensemble_model.load_model()
+        self.ensemble_model.load_model('buy_signal')
         y_pred = self.ensemble_model.predict(X)
         _, y_pred = self.scaler.inverse_transform(X, y_pred)
 

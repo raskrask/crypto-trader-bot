@@ -1,3 +1,5 @@
+import yfinance as yf
+import numpy as np
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 from datetime import datetime, timedelta
