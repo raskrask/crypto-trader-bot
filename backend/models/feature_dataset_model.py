@@ -61,18 +61,9 @@ class FeatureDatasetModel:
         for period in FEATURE_CONFIG["sma_periods"]:
             df[f"sma_{period}"] = talib.SMA(close, timeperiod=period)
             self.feature_columns.append(f"sma_{period}")
-
-        # 移動平均クロス（短期が長期を上抜け → 買いシグナル候補）
-        # 売りシグナル：逆クロス OR 将来利回りが-閾値以下
-        for period_1 in FEATURE_CONFIG["sma_periods"]:
-            for period_2 in FEATURE_CONFIG["sma_periods"]:
-                if period_1 < period_2:
-                    df_period_1 = df[f"sma_{period_1}"]
-                    df_period_2 = df[f"sma_{period_2}"]
-                    df[f"ma_cross_up_{period_1}_{period_2}"] = ((df_period_1 > df_period_2) & (df_period_1.shift(1) <= df_period_2.shift(1))).astype(int) 
-                    df[f"ma_cross_down_{period_1}_{period_2}"] = ((df_period_1 < df_period_2) & (df_period_1.shift(1) >= df_period_2.shift(1))).astype(int) 
-                    self.feature_columns.append(f"ma_cross_up_{period_1}_{period_2}")
-                    self.feature_columns.append(f"ma_cross_down_{period_1}_{period_2}")
+    
+        df = self._add_ma_cross_signals(df)
+        df = self._add_candle_signals(df, open, close)
         
         # ---- (2) ボリンジャーバンド (BOLL) ----
         for period in FEATURE_CONFIG["bollinger_periods"]:
@@ -109,14 +100,47 @@ class FeatureDatasetModel:
 
         return df
 
+    def _add_ma_cross_signals(self, df):
+        """
+        移動平均クロス（短期が長期を上抜け → 買いシグナル候補）
+        売りシグナル：逆クロス OR 将来利回りが-閾値以下
+        """
+        for period_1 in FEATURE_CONFIG["sma_periods"]:
+            for period_2 in FEATURE_CONFIG["sma_periods"]:
+                if period_1 < period_2:
+                    df_period_1 = df[f"sma_{period_1}"]
+                    df_period_2 = df[f"sma_{period_2}"]
+                    df[f"ma_cross_up_{period_1}_{period_2}"] = ((df_period_1 > df_period_2) & (df_period_1.shift(1) <= df_period_2.shift(1))).astype(int) 
+                    df[f"ma_cross_down_{period_1}_{period_2}"] = ((df_period_1 < df_period_2) & (df_period_1.shift(1) >= df_period_2.shift(1))).astype(int) 
+                    self.feature_columns.append(f"ma_cross_up_{period_1}_{period_2}")
+                    self.feature_columns.append(f"ma_cross_down_{period_1}_{period_2}")
+        return df
+
+    def _add_candle_signals(self, df, open_, close):
+        """陽線で5MAを上抜け、陰線で下抜けなどのシグナル"""
+        if "sma_5" not in df.columns:
+            return df  # 念のため
+
+        sma5 = df["sma_5"]
+
+        # 陽線で5MAを上抜け
+        df["candle_cross_up_5"] = ((close > open_) & (close > sma5) & (open_ <= sma5)).astype(int)
+
+        # 陰線で5MAを下抜け
+        df["candle_cross_down_5"] = ((close < open_) & (close < sma5) & (open_ >= sma5)).astype(int)
+
+        self.feature_columns += ["candle_cross_up_5", "candle_cross_down_5"]
+        return df
+
     def _add_lag_features(self, df):
 
         lagged_features = {}
         columns = []
         lag_days = FEATURE_CONFIG["lag_days"]
+        market = self.config_data.get("market_symbol")
 
         for lag in range(1, lag_days + 1):
-            for col in self.feature_columns:
+            for col in [f"open_{market}", f"high_{market}", f"low_{market}", f"close_{market}", f"volume_{market}"]:
                 lagged_features[f"{col}_lag{lag}"] = df[col].shift(lag)
                 columns.append(f"{col}_lag{lag}")
 
