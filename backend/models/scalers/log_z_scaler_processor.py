@@ -25,7 +25,6 @@ class LogZScalerProcessor:
     def transform(self, X):
         if not self.is_fitted:
             self.load()
-            self.is_fitted = True
 
         X_transformed = self._log_transform(X)
         X_scaled = self.scaler_X.transform(self._convert_to_numpy(X_transformed))
