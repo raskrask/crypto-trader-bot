@@ -34,41 +34,33 @@ class MlEvaluteService:
 
             # 予測結果(Staging)
             scaler_stg = LogZScalerProcessor()
-            ensemble_model_stg = EnsembleModel()
-            y_pred_stg = self._predict(scaler_stg, ensemble_model_stg, X)
+            y_pred_buy_stg = self._predict(scaler_stg, EnsembleModel(), X, "buy_signal")
+            y_pred_sell_stg = self._predict(scaler_stg, EnsembleModel(), X, "sell_signal")
 
             # 予測結果(Production)        
             try:
                 scaler_prd = LogZScalerProcessor(stage="production")
-                ensemble_model_prd = EnsembleModel(stage="production")
-                y_pred_prd = self._predict(scaler_prd, ensemble_model_prd, X)
+                y_pred_buy_prd = self._predict(scaler_prd, EnsembleModel(stage="production"), X, "buy_signal")
+                y_pred_sell_prd = self._predict(scaler_prd, EnsembleModel(stage="production"), X, "sell_signal")
             except Exception as e:
-                y_pred_prd = y_pred_stg
-
-            # 日付ラベル
-            target_lag_Y = self.config_data.get("target_lag_Y")
-            training_timeframe = self.config_data.get("training_timeframe")
-            dates = raw_data["timestamp"].iloc[(target_lag_Y-len(y_pred_stg)):].tolist()
-            future_dates = [(dates[-1] + timedelta(minutes=training_timeframe * (i+1))) for i in range(target_lag_Y)]
-            dates.extend(future_dates)
+                y_pred_buy_prd = y_pred_buy_stg
+                y_pred_sell_prd = y_pred_sell_stg
 
             # 実際の価格データ
-            market = self.config_data.get("market_symbol")
-#            actual = raw_data[f"close_{market}"].iloc[(target_lag_Y-len(y_pred_stg)):].tolist()
-#            actual.extend([-1] * target_lag_Y)
-            actual = y['buy_signal'].iloc[(target_lag_Y-len(y_pred_stg)):].tolist()
-            actual.extend([-1] * target_lag_Y)
+            dates = raw_data["timestamp"].iloc[(-len(X)):].tolist()
+            actual_buy_signal = y['buy_signal'].iloc[(-len(X)):].tolist()
+            actual_sell_signal = y['sell_signal'].iloc[(-len(X)):].tolist()
 
+            market = self.config_data.get("market_symbol")
             result = {
                 "dates": dates,
-                "price": raw_data[f"close_{market}"].tolist(),
-                "actual": actual,
-                "current_model": y_pred_prd,
-                "new_model": y_pred_stg,
-                "evaluation": {
-                    "current_model": {"mse": 1, "mae": 2},
-                    "new_model": {"mse": 3, "mae": 4}
-                }
+                "price": X[f"close_{market}"].tolist(),
+                "actual_buy_signal": actual_buy_signal,
+                "actual_sell_signal": [-x for x in actual_sell_signal],
+                "current_buy_model": y_pred_buy_prd,
+                "current_sell_model": [-x for x in y_pred_sell_prd],
+                "new_buy_model": y_pred_buy_stg,
+                "new_sell_model": [-x for x in y_pred_sell_stg],
             }
             return result
 
@@ -93,14 +85,10 @@ class MlEvaluteService:
             print(f"Model promotion failed: {e}")
             raise e
         
-    def _predict(self, scaler, ensemble_model, X):
-        X, _ = scaler.transform(X, None, 'buy_signal')
-        ensemble_model.load_model('buy_signal')
+    def _predict(self, scaler, ensemble_model, X, type):
+        X = scaler.transform(X)
+        ensemble_model.load_model(type)
         y_pred = ensemble_model.predict(X)
-        print(f"Predictions: {y_pred[10:20]} ...")
-
-        X, _ = scaler.inverse_transform(X, y_pred, 'buy_signal')
         y_pred = np.array(y_pred).ravel().tolist()
-        print(f"Predictions: {y_pred[10:20]} ...")
 
         return y_pred

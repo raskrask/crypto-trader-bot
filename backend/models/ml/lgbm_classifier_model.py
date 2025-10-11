@@ -6,10 +6,46 @@ class LgbmClassifierModel(MLModelBase):
     def __init__(self, **params):
         super().__init__()
         self.model_type = "lgbm_classifier"
+        params = {
+            "objective": "binary",
+            "metric": "binary_logloss",    "learning_rate": 0.05,
+            "num_leaves": 7,
+            "max_depth": 3,
+            "min_child_samples": 1,
+            "min_split_gain": 0.0,
+            "reg_alpha": 0.0,
+            "reg_lambda": 0.0,
+            "n_estimators": 200,
+            "subsample": 0.8,
+            "colsample_bytree": 0.8,
+            "verbosity": -1,
+        }
+
         self.model = LGBMClassifier(**params)
 
     def train(self, X_train, y_train):
-        self.model.fit(X_train, y_train)
+        try:
+            import lightgbm as lgb
+
+            self.model.fit(
+                X_train, y_train,
+                eval_set=[(X_train, y_train)],
+                eval_metric="binary_logloss",
+                callbacks=[lgb.log_evaluation(period=1)]  # ← 1イテごとに出力
+            )
+            print("✅ Training complete")
+        except Exception as e:
+            print("❌ Training failed:", e)
+
+        import pandas as pd
+        try:
+            fi = pd.Series(self.model.feature_importances_, index=X_train.columns)
+            print("Feature importances (non-zero):")
+            print(fi[fi > 0].sort_values(ascending=False).head(10))
+        except Exception as e:
+            print("⚠️ No feature importances:", e)
+
+        #self.model.fit(X_train, y_train)
 
     def predict(self, X_test):
         #return self.model.predict(X_test)

@@ -17,32 +17,21 @@ def get_prediction_data():
 
 prediction_data = get_prediction_data()
 
-#st.warning("1---------------")
-st.warning(prediction_data["dates"][5:][:30])
-st.warning(prediction_data["actual"][5:][:30])
-st.warning(prediction_data["new_model"][5:][:30])
-st.warning(prediction_data["current_model"][5:][:30])
-
-
 if prediction_data:
 
-    actual = list(map(int,prediction_data["actual"][5:]))
-    actual = [ int(x) if x != -1 else None for x in actual ]
-
-    new_model = list(map(int,prediction_data["new_model"][5:]))
-    new_model = [ x if x != -1 else None for x in new_model ]
-
-    current_model = list(map(int,prediction_data["current_model"][5:]))
-    current_model = [ round(x) if x != -1 else None for x in current_model ]
-
-    price = prediction_data["price"][5:len(current_model)]
+    def clean_signal(arr):
+        arr = list(map(float, arr[5:]))
+        return [float(x) if x else None for x in arr]
 
     df = pd.DataFrame({
         "Date": pd.to_datetime(prediction_data["dates"][5:]),
-        "price": price,
-        "actual": actual,
-        "new_model": prediction_data["new_model"][5:],
-        "current_model": current_model
+        "price": clean_signal(prediction_data["price"]),
+        "actual_buy_signal": clean_signal(prediction_data["actual_buy_signal"]),
+        "actual_sell_signal": clean_signal(prediction_data["actual_sell_signal"]),
+        "new_buy_model": clean_signal(prediction_data["new_buy_model"]),
+        "new_sell_model": clean_signal(prediction_data["new_sell_model"]),    
+        "current_buy_model": clean_signal(prediction_data["current_buy_model"]),
+        "current_sell_model": clean_signal(prediction_data["current_sell_model"])
     })
     # **📊 実際の価格 vs 予測**
     st.subheader("📊 実際の価格と予測結果の比較からモデルを評価")
@@ -52,19 +41,19 @@ if prediction_data:
     # 上段
     fig.add_trace(go.Scatter(x=df["Date"], y=df["price"], mode="lines", name="実際の価格"), row=1, col=1)
 
-    fig.add_trace(go.Scatter(x=df["Date"], y=df["actual"], mode="lines", name="実際の価格判定"), row=2, col=1)
-    fig.add_trace(go.Scatter(x=df["Date"], y=df["new_model"], mode="lines", name="新モデル予測"), row=2, col=1)
-    fig.add_trace(go.Scatter(x=df["Date"], y=df["current_model"], mode="lines", name="現モデル予測"), row=2, col=1)
+    fig.add_trace(go.Scatter(x=df["Date"], y=df["actual_buy_signal"], mode="lines", name="実際の価格判定（買）", line=dict(color="green", width=2)), row=2, col=1)
+    fig.add_trace(go.Scatter(x=df["Date"], y=df["new_buy_model"], mode="lines", name="新モデル予測（買）", 
+                             line=dict(color="rgba(0, 0, 255, 0.7)"), fill="tozeroy", fillcolor="rgba(0, 0, 255, 0.2)"), row=2, col=1)
+    fig.add_trace(go.Scatter(x=df["Date"], y=df["current_buy_model"], mode="lines", name="現モデル予測（買）", line=dict(color="gray")), row=2, col=1)
+
+    fig.add_trace(go.Scatter(x=df["Date"], y=df["actual_sell_signal"], mode="lines", name="実際の価格判定（売）", line=dict(color="red", width=2)), row=2, col=1)
+    fig.add_trace(go.Scatter(x=df["Date"], y=df["new_sell_model"], mode="lines", name="新モデル予測（売）", 
+                             line=dict(color="rgba(255, 0, 0, 0.7)"), fill="tozeroy", fillcolor="rgba(255, 0, 0, 0.2)"), row=2, col=1)
+    fig.add_trace(go.Scatter(x=df["Date"], y=df["current_sell_model"], mode="lines", name="現モデル予測（売）", line=dict(color="purple")), row=2, col=1)
 
     # レイアウト
     fig.update_layout(height=600, width=900, title_text="実際の価格と予測結果の比較")
-
-#    st.plotly_chart(fig, use_container_width=True)
-#    fig = px.line(df, x="日付", y=["実際の価格", "新モデル予測", "現モデル予測"],
-#                labels={"value": "価格", "variable": "データ"},
-#                title="実際の価格 vs 予測値")
-#    st.plotly_chart(fig, use_container_width=True)
-
+    st.plotly_chart(fig, use_container_width=True)
 
     # **📋 詳細データ**
     st.subheader("📋 予測データの詳細")

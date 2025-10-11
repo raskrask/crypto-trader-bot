@@ -22,6 +22,15 @@ class EnsembleModel:
 
     def train(self, X_train, y_train, y_name=None):
         """各モデルを学習"""
+
+        print("=== Train Data Summary ===")
+        print("Shape:", X_train.shape)
+        print("NaN count:", np.isnan(X_train).sum().sum())
+        print("Feature std (first 10):", X_train.std(axis=0)[:10])
+        print("y_train ratio:", y_train.mean())
+        print("Unique labels:", np.unique(y_train))
+        print("===========================")
+
         for name, model in self.models.items():
             print(f"Training {name} for {y_name}...")
 #            optimizer = HyperparameterOptimizer(model, X_train, y_train)

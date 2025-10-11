@@ -9,70 +9,45 @@ from config import constants
 class LogZScalerProcessor:
     def __init__(self, stage="staging"):
         self.scaler_X = StandardScaler()
-        self.scaler_y = StandardScaler()
         self.is_fitted = False
         self.stage = stage
         self.s3 = get_s3_helper()
 
-    def fit_transform(self, X, y, y_name):
+    def fit_transform(self, X):
         X_transformed = self._log_transform(X)
-        y_transformed = self._log_transform(y)
-
         X_scaled = self.scaler_X.fit_transform(self._convert_to_numpy(X_transformed))
-        y_scaled = self.scaler_y.fit_transform(self._convert_to_numpy(y_transformed))
 
         self.is_fitted = True
-        self.save(y_name)
-#        return self._convert_back(X, X_scaled), self._convert_back(y, y_scaled)
-        return self._convert_back(X, X_scaled), y
+        self.save()
 
-    def transform(self, X, y=None, y_name=None):
+        return self._convert_back(X, X_scaled)
+
+    def transform(self, X):
         if not self.is_fitted:
-            self.load(y_name)
+            self.load()
 
         X_transformed = self._log_transform(X)
         X_scaled = self.scaler_X.transform(self._convert_to_numpy(X_transformed))
 
-        if y is None:
-            return self._convert_back(X, X_scaled), None
+        return self._convert_back(X, X_scaled)
 
-        y_transformed = self._log_transform(y)
-        y_scaled = self.scaler_y.transform(self._convert_to_numpy(y_transformed))
-#        return self._convert_back(X, X_scaled), self._convert_back(y, y_scaled)
-        return self._convert_back(X, X_scaled), y
-
-    def inverse_transform(self, X, y=None, y_name=None):
+    def inverse_transform(self, X):
         if not self.is_fitted:
-            self.load(y_name)
+            self.load()
 
         X_original = self.scaler_X.inverse_transform(self._convert_to_numpy(X))
         X_reverted = self._inverse_log_transform(X_original)
 
-        if y is None:
-            return self._convert_back(X, X_reverted), None
+        return self._convert_back(X, X_reverted)
 
-        y_original = self.scaler_y.inverse_transform(self._convert_to_numpy(y))
-        y_reverted = self._inverse_log_transform(y_original)
-#        return self._convert_back(X, X_reverted), self._convert_back(y, y_reverted)
-        return self._convert_back(X, X_reverted), y
+    def get_s3_filename(self):
+        return f"{constants.S3_FOLDER_MODEL}/{self.stage}/log_z_scaler.pkl"
 
-    def get_s3_filename(self, type):
-        return f"{constants.S3_FOLDER_MODEL}/{self.stage}/log_z_scaler_{type}.pkl"
+    def save(self):
+        self.s3.save_pkl_to_s3(self.scaler_X, self.get_s3_filename())
 
-    def save(self, y_name):
-        self.s3.save_pkl_to_s3(self.scaler_X, self.get_s3_filename('X'))
-        if y_name is not None:
-            print(f"Saving scaler for {self.get_s3_filename(y_name)}")
-            self.s3.save_pkl_to_s3(self.scaler_y, self.get_s3_filename(y_name))
-
-    def load(self, y_name):
-        print(f"load scaler1 for {y_name}")
-
-        self.scaler_X = self.s3.load_pkl_from_s3(self.get_s3_filename('X'))
-        if y_name is not None:
-            print(f"load scaler for {self.get_s3_filename(y_name)}")
-
-            self.scaler_y = self.s3.load_pkl_from_s3(self.get_s3_filename(y_name))
+    def load(self):
+        self.scaler_X = self.s3.load_pkl_from_s3(self.get_s3_filename())
         self.is_fitted = True
 
     def _log_transform(self, data):
