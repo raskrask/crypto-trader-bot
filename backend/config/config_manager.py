@@ -14,6 +14,10 @@ DEFAULT_CONFIG =  {
     "test_ratio": 0.2,
     "feature_lag_X_BB": 32,
     "feature_lag_X_ATR": 15,
+    "target_buy_term": 15,
+    "target_buy_rate": 0.03,
+    "target_sell_term": 10,
+    "target_sell_rate": 0.01,
     "target_lag_Y": 1,
     "auto_trade_buy_amount": 0.001,
     "auto_trade_sell_amount": 0.001
@@ -29,6 +33,10 @@ class Config(BaseModel):
     test_ratio: float
     feature_lag_X_BB: int
     feature_lag_X_ATR: int
+    target_buy_term: int
+    target_buy_rate: float
+    target_sell_term: int
+    target_sell_rate: float
     target_lag_Y: int
     auto_trade_buy_amount: float
     auto_trade_sell_amount: float

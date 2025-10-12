@@ -20,6 +20,12 @@ feature_lag_X_BB = st.slider("説明変数のSMAとBB計算するラグ数（予
 feature_lag_X_ATR = st.slider("説明変数のATRの計算するラグ数（予測する対象の足数）", 1, 50, config["feature_lag_X_ATR"])
 target_lag_Y = st.slider("目的変数の移動するラグ数（予測する対象の足数）", 1, 50, config["target_lag_Y"])
 
+st.markdown("### 収益判定の条件設定")
+target_buy_term = st.slider("買い確定までの日数", 2, 40, config["target_buy_term"])
+target_buy_rate = st.slider("目標上幅（例: 0.1 = 10%）", 0.01, 0.1, config["target_buy_rate"])
+target_sell_term = st.slider("売り確定までの日数", 2, 40, config["target_sell_term"])
+target_sell_rate = st.slider("目標下幅（例: 0.1 = 10%）", 0.01, 0.1, config["target_sell_rate"])
+
 st.markdown("### 自動売買の条件設定")
 auto_trade_buy_amount = st.slider("自動購入数量", 0.001, 0.002, config["auto_trade_buy_amount"], step=0.0001, format="%.4f" )
 auto_trade_sell_amount = st.slider("自動売却数量", 0.001, 0.002, config["auto_trade_sell_amount"], step=0.0001, format="%.4f" )
@@ -34,6 +40,10 @@ config = {
     "feature_lag_X_BB": feature_lag_X_BB,
     "feature_lag_X_ATR": feature_lag_X_ATR,
     "target_lag_Y": target_lag_Y,
+    "target_buy_term": target_buy_term,
+    "target_buy_rate": target_buy_rate,
+    "target_sell_term": target_sell_term,
+    "target_sell_rate": target_sell_rate,
     "auto_trade_buy_amount": auto_trade_buy_amount,
     "auto_trade_sell_amount": auto_trade_sell_amount
 }
