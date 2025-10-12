@@ -4,6 +4,7 @@ from models.ml.random_forest_model import RandomForestModel
 from models.ml.xgboost_model import XGBoostModel
 from models.ml.lightgbm_model import LightGBMModel
 from models.ml.lstm_model import LSTMModel
+from models.ml.dense_model import DenseModel
 from models.hyperparameter_optimizer import HyperparameterOptimizer
 from models.ml.lgbm_classifier_model import LgbmClassifierModel
 
@@ -13,6 +14,7 @@ class EnsembleModel:
         self.stage = stage
         self.models = {
             "lgbm_classifier": LgbmClassifierModel(),
+            "dense": DenseModel(),
 #            "random_forest": RandomForestModel(),
 #            "xgboost": XGBoostModel(),
 #            "lightgbm": LightGBMModel(),
@@ -64,6 +66,8 @@ class EnsembleModel:
         results_list = []
         for name, model in self.models.items():
             feature_importance_df = model.get_feature_importance(X_test)
+            if feature_importance_df is None:
+                continue
             feature_importance_df = feature_importance_df.reset_index()
             feature_importance_df.columns = ["Feature", "Importance"]
             feature_importance_df["ModelName"] = name

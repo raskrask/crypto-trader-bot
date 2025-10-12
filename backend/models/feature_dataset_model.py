@@ -157,14 +157,9 @@ class FeatureDatasetModel:
         return df
 
 
-    def _add_return_signals(self, df,
-                            lag_days = 20, return_threshold = 0.03):
+    def _add_return_signals(self, df):
         """
         移動平均クロスと将来リターン閾値で買い・売りシグナルを作成する。
-        
-        Args:
-            lag_days (int): 将来リターンを計算する日数
-            return_threshold (float): 利回りの閾値（例: 0.03 = 3%）
         
         Returns:
             pd.DataFrame: シグナル列 'buy_signal', 'sell_signal' を追加したDataFrame
@@ -172,15 +167,19 @@ class FeatureDatasetModel:
         df = df.copy()
 
         market = self.config_data.get("market_symbol")
-        df["max_close"] = df[f"close_{market}"].rolling(lag_days).max().shift(-lag_days)
-        df["min_close"] = df[f"close_{market}"].rolling(lag_days).min().shift(-lag_days)
+        target_buy_term = self.config_data.get("target_buy_term")
+        target_buy_rate = self.config_data.get("target_buy_rate")
+        target_sell_term = self.config_data.get("target_sell_term")
+        target_sell_rate = self.config_data.get("target_sell_rate")
+        df["max_close"] = df[f"close_{market}"].rolling(target_buy_term).max().shift(-target_buy_term)
+        df["min_close"] = df[f"close_{market}"].rolling(target_sell_term).min().shift(-target_sell_term)
         df['buy_signal'] = 0
         df['sell_signal'] = 0
 
         df["max_return"] = df["max_close"] / df[f"close_{market}"]
         df["min_return"] = df["min_close"] / df[f"close_{market}"]
-        df['buy_signal'] =  (df["max_return"] > (1+return_threshold)).astype(int) 
-        df['sell_signal'] = (df["min_return"] < (1-return_threshold)).astype(int) 
+        df['buy_signal'] =  (df["max_return"] > (1+target_buy_rate)).astype(int) 
+        df['sell_signal'] = (df["min_return"] < (1-target_sell_rate)).astype(int) 
         df.loc[(df['buy_signal'] == 1) & (df['sell_signal'] == 1), ['buy_signal','sell_signal']] = 0
         df.dropna(inplace=True)
 

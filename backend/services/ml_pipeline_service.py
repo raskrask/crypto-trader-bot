@@ -54,7 +54,7 @@ class MlPipelineService:
                 y_pred_soft = (np.array(y_pred) > 0.5).astype(int)
                 importance = self.ensemble_model.get_feature_importance(X_test)
                 eval_results = self.evaluator.evaluate(y_test, y_pred)
-                score = accuracy_score(y_test, pd.DataFrame(y_pred, columns=["buy_signal"], index=X_test.index).round())
+                score = accuracy_score(y_test, pd.DataFrame(y_pred, columns=[y_name], index=X_test.index).round())
                 result = {"Accuracy": score, "importance": importance, "eval_results": eval_results}
 
                 print("Accuracy:", accuracy_score(y_test, y_pred_soft))
