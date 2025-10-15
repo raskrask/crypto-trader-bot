@@ -53,7 +53,7 @@ class EdaService:
         #print(df.head())
 
         feature_model = FeatureDatasetModel()
-        x, y = feature_model.create_features(df)
+        x, y = feature_model.prepare_dataset(df)
         df = pd.concat([df, x], axis=1)
         df = pd.concat([df, y], axis=1)
         df.dropna(inplace=True)

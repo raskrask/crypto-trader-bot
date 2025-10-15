@@ -4,6 +4,9 @@ import numpy as np
 from datetime import datetime
 from models.economic_data import EconomicData
 from config.config_manager import get_config_manager
+from config.constants import SIGNAL_BUY , SIGNAL_SELL
+from utils.market_symbol import market_symbol
+from models.swing_trade_strategy import SwingTradeStrategy
 
 FEATURE_CONFIG = {
     "sma_periods": [5, 10, 15, 20, 50],  # 移動平均
@@ -17,8 +20,6 @@ FEATURE_CONFIG = {
     "use_features": [                      # 使用する特徴量
         "SMA", "RSI", "ATR", "BOLL", "OBV", "MACD", "STOCH"
     ],
-    "trade_signals_threshold": 0.02,  # 売買シグナルの閾値
-    "trade_signals_window": 21,    # 売買シグナルの計算ウィンドウ
 }
 
 class FeatureDatasetModel:
@@ -30,41 +31,55 @@ class FeatureDatasetModel:
         df = df.copy()
         df = self._add_technical_features(df)
         df = self._add_lag_features(df)
+
+        strategy = SwingTradeStrategy(df)
+        self.feature_columns += strategy.trend_following()
+        df = strategy.data
+
+        df.dropna(inplace=True)
+
+        return df[self.feature_columns]
+
+    def create_targets(self, df):
+        df = df.copy()
+        df = self._add_return_signals(df)
+        df.dropna(inplace=True)
+
+        return df[[SIGNAL_BUY, SIGNAL_SELL]]
+
+    def prepare_dataset(self, df):
+        df = df.copy()
+        df = self._add_technical_features(df)
+        df = self._add_lag_features(df)
+
+        strategy = SwingTradeStrategy(df)
+        self.feature_columns += strategy.trend_following()
+        df = strategy.data
+
         df = self._add_return_signals(df)
         df.dropna(inplace=True)
 
         # ---- 説明変数と目的変数の分割 ----
         X = df[self.feature_columns]
-        Y = df[['buy_signal', 'sell_signal']]
+        Y = df[[SIGNAL_BUY, SIGNAL_SELL]]
 
         return X, Y
 
-#        y_buy = df[['target']]
-
-#        return X, y_buy, None
-#        y_buy = df[['buy_signal']].rename(columns={'buy_signal': 'target'})
-#        y_sell = df[['sell_signal']].rename(columns={'sell_signal': 'target'})
-
-#        return X, y_buy, y_sell
 
     def _add_technical_features(self, df):
         df = df.copy()
-        market = self.config_data.get("market_symbol")
-        open = df[f"open_{market}"]
-        high = df[f"high_{market}"]
-        low = df[f"low_{market}"]
-        close = df[f"close_{market}"]
-        volume = df[f"volume_{market}"]
-        self.feature_columns.extend([f"open_{market}", f"high_{market}", f"low_{market}", f"close_{market}", f"volume_{market}"])
+        keys = ["open", "high", "low", "close", "volume"]
+        ohlcv = {k: df[market_symbol(prefix=f"{k}_")] for k in keys}
+        open, high, low, close, volume = (
+            ohlcv["open"], ohlcv["high"], ohlcv["low"], ohlcv["close"], ohlcv["volume"]
+        )
+        self.feature_columns.extend([market_symbol(prefix=f"{k}_") for k in keys])
 
         # ---- (1) 移動平均 (SMA) ----
         for period in FEATURE_CONFIG["sma_periods"]:
             df[f"sma_{period}"] = talib.SMA(close, timeperiod=period)
             self.feature_columns.append(f"sma_{period}")
-    
-        df = self._add_ma_cross_signals(df)
-        df = self._add_candle_signals(df, open, close)
-        
+
         # ---- (2) ボリンジャーバンド (BOLL) ----
         for period in FEATURE_CONFIG["bollinger_periods"]:
             upper, middle, lower = talib.BBANDS(close, timeperiod=period)
@@ -100,37 +115,6 @@ class FeatureDatasetModel:
 
         return df
 
-    def _add_ma_cross_signals(self, df):
-        """
-        移動平均クロス（短期が長期を上抜け → 買いシグナル候補）
-        売りシグナル：逆クロス OR 将来利回りが-閾値以下
-        """
-        for period_1 in FEATURE_CONFIG["sma_periods"]:
-            for period_2 in FEATURE_CONFIG["sma_periods"]:
-                if period_1 < period_2:
-                    df_period_1 = df[f"sma_{period_1}"]
-                    df_period_2 = df[f"sma_{period_2}"]
-                    df[f"ma_cross_up_{period_1}_{period_2}"] = ((df_period_1 > df_period_2) & (df_period_1.shift(1) <= df_period_2.shift(1))).astype(int) 
-                    df[f"ma_cross_down_{period_1}_{period_2}"] = ((df_period_1 < df_period_2) & (df_period_1.shift(1) >= df_period_2.shift(1))).astype(int) 
-                    self.feature_columns.append(f"ma_cross_up_{period_1}_{period_2}")
-                    self.feature_columns.append(f"ma_cross_down_{period_1}_{period_2}")
-        return df
-
-    def _add_candle_signals(self, df, open_, close):
-        """陽線で5MAを上抜け、陰線で下抜けなどのシグナル"""
-        if "sma_5" not in df.columns:
-            return df  # 念のため
-
-        sma5 = df["sma_5"]
-
-        # 陽線で5MAを上抜け
-        df["candle_cross_up_5"] = ((close > open_) & (close > sma5) & (open_ <= sma5)).astype(int)
-
-        # 陰線で5MAを下抜け
-        df["candle_cross_down_5"] = ((close < open_) & (close < sma5) & (open_ >= sma5)).astype(int)
-
-        self.feature_columns += ["candle_cross_up_5", "candle_cross_down_5"]
-        return df
 
     def _add_lag_features(self, df):
 
@@ -165,22 +149,18 @@ class FeatureDatasetModel:
             pd.DataFrame: シグナル列 'buy_signal', 'sell_signal' を追加したDataFrame
         """
         df = df.copy()
-
-        market = self.config_data.get("market_symbol")
+        close = df[market_symbol(prefix="close_")]
         target_buy_term = self.config_data.get("target_buy_term")
         target_buy_rate = self.config_data.get("target_buy_rate")
         target_sell_term = self.config_data.get("target_sell_term")
         target_sell_rate = self.config_data.get("target_sell_rate")
-        df["max_close"] = df[f"close_{market}"].rolling(target_buy_term).max().shift(-target_buy_term)
-        df["min_close"] = df[f"close_{market}"].rolling(target_sell_term).min().shift(-target_sell_term)
-        df['buy_signal'] = 0
-        df['sell_signal'] = 0
+        df["max_close"] = close.rolling(target_buy_term).max().shift(-target_buy_term)
+        df["min_close"] = close.rolling(target_sell_term).min().shift(-target_sell_term)
 
-        df["max_return"] = df["max_close"] / df[f"close_{market}"]
-        df["min_return"] = df["min_close"] / df[f"close_{market}"]
-        df['buy_signal'] =  (df["max_return"] > (1+target_buy_rate)).astype(int) 
-        df['sell_signal'] = (df["min_return"] < (1-target_sell_rate)).astype(int) 
-        df.loc[(df['buy_signal'] == 1) & (df['sell_signal'] == 1), ['buy_signal','sell_signal']] = 0
-        df.dropna(inplace=True)
+        df["max_return"] = df["max_close"] / close
+        df["min_return"] = df["min_close"] / close
+        df[SIGNAL_BUY] =  (df["max_return"] > (1+target_buy_rate)).astype(int) 
+        df[SIGNAL_SELL] = (df["min_return"] < (1-target_sell_rate)).astype(int) 
+        df.loc[(df[SIGNAL_BUY] == 1) & (df[SIGNAL_SELL] == 1), [SIGNAL_BUY, SIGNAL_SELL]] = 0
 
         return df

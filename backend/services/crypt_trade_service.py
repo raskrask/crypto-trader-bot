@@ -4,21 +4,41 @@ import requests
 import json
 from datetime import datetime, timedelta, timezone
 from utils.s3_helper import get_s3_helper
+from utils.market_symbol import market_symbol
 from config.config_manager import get_config_manager
 from models.crypto_training_dataset import CryptoTrainingDataset
-from config import constants
+from models.exchanges.coincheck_api import CoinCheckAPI
+from config.constants import S3_FOLDER_TRADE
 
-class TradeHistoryService:
+class CryptTradeService:
     def __init__(self):
         self.config_data = get_config_manager().get_config()
         self.s3 = get_s3_helper()
+        self.coincheck = CoinCheckAPI()
 
-    def get_history(self):
-        
+    def get_balance(self):
+        balance = self.coincheck.get_balance()
+        ticker = self.coincheck.get_ticker()
+        return {"balance": balance, "ticker": ticker}
 
+    def get_transactions(self):
+        trade_history = self.coincheck.get_trade_history()
+        open_orders = self.coincheck.get_open_orders()
+        return {"trade_history": trade_history, "open_orders": open_orders }
+
+    def create_limit_order(self, side, amount, price):
+        # !!!! Safty Validate !!!! 
+        ticker = self.coincheck.get_ticker()
+        rate = ticker.get('last')
+        print(f"rate={rate} a={amount} p={price}")
+        if amount * rate > 1_000_000 or amount * price > 1_000_000:
+            raise Exception( f"取り扱い金額が大きすぎます。{amount} x {price}")
+        return self.coincheck.create_limit_order(side, amount, price)
+
+    def get_history_archive(self):
         # 取引履歴を取得
         market = self.config_data.get("market_symbol")
-        prefix = f"{constants.S3_FOLDER_TRADE}/{market}_"
+        prefix = f"{S3_FOLDER_TRADE}/{market}_"
         trade_df = pd.DataFrame(list(map(lambda x: self.s3.load_json_from_s3(x), self.s3.get_s3_files(prefix))))
         trade_df["timestamp"] = pd.to_datetime(trade_df["execution_date"]).dt.floor("D")
         #aggregations = {

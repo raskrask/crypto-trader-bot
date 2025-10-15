@@ -30,9 +30,9 @@ class MlPipelineService:
 
             # step 2: 特徴量エンジニアリング
             self.training_status = {"progress": 20, "status": "Processing feature dataset...", "result": None}
-#            feature_data = self.feature_model.create_features(raw_data)
+#            feature_data = self.feature_model.prepare_dataset(raw_data)
 #            X, y = self.feature_model.select_lagged_features(feature_data)
-            X, Y_vals = self.feature_model.create_features(raw_data)
+            X, Y_vals = self.feature_model.prepare_dataset(raw_data)
             X = self.scaler.fit_transform(X)
             num_targets = len(Y_vals.columns)
             

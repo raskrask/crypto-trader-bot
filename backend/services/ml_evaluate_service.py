@@ -11,6 +11,7 @@ from models.ensemble_model import EnsembleModel
 from config.config_manager import get_config_manager
 from utils.s3_helper import get_s3_helper
 from config import constants
+from config.constants import SIGNAL_BUY , SIGNAL_SELL, STAGE_PRODUCTION, STAGE_STAGING
 
 class MlEvaluteService:
     def __init__(self):
@@ -28,28 +29,28 @@ class MlEvaluteService:
             self.crypto_data.start_date = self.crypto_data.end_date - relativedelta(months=12)
 
             raw_data = self.crypto_data.get_data()
-#            feature_data = self.feature_model.create_features(raw_data)
+#            feature_data = self.feature_model.prepare_dataset(raw_data)
 #            X, _ = self.feature_model.select_features(feature_data)
-            X, y  = self.feature_model.create_features(raw_data)
+            X, y  = self.feature_model.prepare_dataset(raw_data)
 
             # 予測結果(Staging)
             scaler_stg = LogZScalerProcessor()
-            y_pred_buy_stg = self._predict(scaler_stg, EnsembleModel(), X, "buy_signal")
-            y_pred_sell_stg = self._predict(scaler_stg, EnsembleModel(), X, "sell_signal")
+            y_pred_buy_stg = self._predict(scaler_stg, EnsembleModel(), X, SIGNAL_BUY)
+            y_pred_sell_stg = self._predict(scaler_stg, EnsembleModel(), X, SIGNAL_SELL)
 
             # 予測結果(Production)        
             try:
-                scaler_prd = LogZScalerProcessor(stage="production")
-                y_pred_buy_prd = self._predict(scaler_prd, EnsembleModel(stage="production"), X, "buy_signal")
-                y_pred_sell_prd = self._predict(scaler_prd, EnsembleModel(stage="production"), X, "sell_signal")
+                scaler_prd = LogZScalerProcessor(stage=STAGE_PRODUCTION)
+                y_pred_buy_prd = self._predict(scaler_prd, EnsembleModel(stage=STAGE_PRODUCTION), X, SIGNAL_BUY)
+                y_pred_sell_prd = self._predict(scaler_prd, EnsembleModel(stage=STAGE_PRODUCTION), X, SIGNAL_SELL)
             except Exception as e:
                 y_pred_buy_prd = y_pred_buy_stg
                 y_pred_sell_prd = y_pred_sell_stg
 
             # 実際の価格データ
             dates = raw_data["timestamp"].iloc[(-len(X)):].tolist()
-            actual_buy_signal = y['buy_signal'].iloc[(-len(X)):].tolist()
-            actual_sell_signal = y['sell_signal'].iloc[(-len(X)):].tolist()
+            actual_buy_signal = y[SIGNAL_BUY].iloc[(-len(X)):].tolist()
+            actual_sell_signal = y[SIGNAL_SELL].iloc[(-len(X)):].tolist()
 
             market = self.config_data.get("market_symbol")
             result = {
@@ -73,8 +74,8 @@ class MlEvaluteService:
         try:
             s3 = get_s3_helper()
 
-            fld_stg = f"{constants.S3_FOLDER_MODEL}/staging"
-            fld_prd = f"{constants.S3_FOLDER_MODEL}/production"
+            fld_stg = f"{constants.S3_FOLDER_MODEL}/{STAGE_STAGING}"
+            fld_prd = f"{constants.S3_FOLDER_MODEL}/{STAGE_PRODUCTION}"
             arc_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             fld_arc = f"{constants.S3_FOLDER_MODEL}/archived/{arc_date}"
 

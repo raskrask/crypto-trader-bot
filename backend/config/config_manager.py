@@ -1,7 +1,7 @@
 import json
 from typing import Optional
 from functools import lru_cache
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from utils.s3_helper import get_s3_helper
 from config import constants
 
@@ -25,18 +25,18 @@ DEFAULT_CONFIG =  {
 
 class Config(BaseModel):
     """設定情報のスキーマ"""
-    market_symbol: str
-    training_period_months: int
-    training_timeframe: int
+    market_symbol: str = Field(..., description="マーケット Symbol")
+    training_period_months: int = Field(..., description="学習データの月数")
+    training_timeframe: int = Field(..., description="学習データの足数（分数）")
     ensemble_ratio: float
     epochs: int
     test_ratio: float
     feature_lag_X_BB: int
     feature_lag_X_ATR: int
-    target_buy_term: int
-    target_buy_rate: float
-    target_sell_term: int
-    target_sell_rate: float
+    target_buy_term: int = Field(..., description="買い確定までの日数")
+    target_buy_rate: float = Field(..., description="目標上幅（例: 0.1 = 10%）")
+    target_sell_term: int = Field(..., description="売り確定までの日数")
+    target_sell_rate: float = Field(..., description="目標下幅（例: 0.1 = 10%）")
     target_lag_Y: int
     auto_trade_buy_amount: float
     auto_trade_sell_amount: float

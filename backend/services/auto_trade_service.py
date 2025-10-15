@@ -11,7 +11,7 @@ from models.exchanges.coincheck_api import CoinCheckAPI
 from config.config_manager import get_config_manager
 from config.settings import settings
 from utils.s3_helper import get_s3_helper
-from config import constants
+from config.constants import *
 
 class AutoTradeService:
     def __init__(self):
@@ -24,8 +24,8 @@ class AutoTradeService:
     def run(self):
         self.crypto_data = CryptoTrainingDataset()
         self.feature_model = FeatureDatasetModel()
-        self.scaler = LogZScalerProcessor(stage="production")
-        self.ensemble_model = EnsembleModel(stage="production")
+        self.scaler = LogZScalerProcessor(stage=STAGE_PRODUCTION)
+        self.ensemble_model = EnsembleModel(stage=STAGE_PRODUCTION)
         self.coincheck = CoinCheckAPI()
 
         predict = self._predict()
@@ -39,9 +39,9 @@ class AutoTradeService:
 
     def _predict(self):
         raw_data = self.crypto_data.get_data()
-#        feature_data = self.feature_model.create_features(raw_data)
+#        feature_data = self.feature_model.prepare_dataset(raw_data)
 #        X, _ = self.feature_model.select_features(feature_data)
-        X, _  = self.feature_model.create_features(raw_data)
+        X, _  = self.feature_model.prepare_dataset(raw_data)
         X, _ = self.scaler.transform(X)
 
         self.ensemble_model.load_model('buy_signal')
@@ -140,7 +140,7 @@ class AutoTradeService:
 
     def _save_trade(self, result):
         date_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
-        s3_key = f"{constants.S3_FOLDER_TRADE}/{self.market}_{date_str}.json"
+        s3_key = f"{S3_FOLDER_TRADE}/{self.market}_{date_str}.json"
         self.s3.save_json_to_s3(result, s3_key)
 
 if __name__ == "__main__":

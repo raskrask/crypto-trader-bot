@@ -2,6 +2,7 @@ import ccxt
 import json
 from config.settings import settings
 from config.config_manager import get_config_manager
+from utils.market_symbol import market_symbol
 
 class CoinCheckAPI:
 
@@ -11,31 +12,39 @@ class CoinCheckAPI:
             'secret': settings.COINCHECK_API_SECRET
         })
         self.config_data = get_config_manager().get_config()
-        self.market = self.config_data.get("market_symbol")
+        self.market = market_symbol(fmt="ccxt")
+
+    def get_ticker(self):
+        ticker = self.client.fetch_ticker(self.market)
+        return ticker
 
     def get_balance(self):
         balance = self.client.fetch_balance()
+        return balance
         market_symbol = self.market.split("_")
         #return { x: float(balance["info"][x]) for x in market_symbol }
         return [ float(balance["info"][x]) for x in market_symbol ]
 
     def create_limit_order(self, side, amount, price):
         # 指値注文を出す
+        print("============")
+        print(f"{side} a={amount} p={price}")
         return self.client.create_order(self.market, "limit", side, amount, price)
     
     def create_market_order(self, side, amount):
         # 成行注文を出す
         return self.client.create_order(self.market, "market", side, amount)
     
-    def get_trade_history(self, market):
-        trades = self.client.fetch_my_trades(market)
+    def get_trade_history(self):
+        trades = self.client.fetch_my_trades(self.market)
         return trades
 
-    def get_open_orders(self, market):
-        open_orders = self.client.fetch_open_orders(market)
+    def get_open_orders(self):
+        open_orders = self.client.fetch_open_orders(self.market)
+        return open_orders
 
-    def get_cancel_order(self, order_id, market):
-        cancel_response = self.client.cancel_order(order_id, market)
+    def get_cancel_order(self, order_id):
+        cancel_response = self.client.cancel_order(order_id, self.market)
         print(cancel_response)
 
     def get_order_book(self):

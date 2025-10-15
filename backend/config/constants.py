@@ -9,3 +9,8 @@ S3_FOLDER_MODEL = "ml_models"
 S3_FOLDER_TRADE = "trade"
 
 
+STAGE_PRODUCTION = "production"
+STAGE_STAGING = "staging"
+
+SIGNAL_BUY = "buy_signal"
+SIGNAL_SELL = "sell_signal"
